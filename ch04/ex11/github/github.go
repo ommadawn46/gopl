@@ -1,20 +1,20 @@
 package github
 
 import (
-  "time"
-  "fmt"
+	"fmt"
+	"time"
 )
 
 const BaseIssuesURL = "https://api.github.com/repos/%s/%s/issues"
 
 func GetIssuesURL(owner string, repo string) string {
-  return fmt.Sprintf(BaseIssuesURL, owner, repo)
+	return fmt.Sprintf(BaseIssuesURL, owner, repo)
 }
 
 type Issue struct {
 	Number    int
 	HTMLURL   string `json:"html_url"`
-  REPOURL   string `json:"repository_url"`
+	REPOURL   string `json:"repository_url"`
 	Title     string
 	State     string
 	User      *User
@@ -28,12 +28,12 @@ type User struct {
 }
 
 type IssuePost struct {
-	Title     string `json:"title"`
-	Body      string `json:"body"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
 
 type IssuePatch struct {
-	Title     string `json:"title"`
-	Body      string `json:"body"`
-  State     string `json:"state"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+	State string `json:"state"`
 }

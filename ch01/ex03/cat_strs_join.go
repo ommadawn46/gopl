@@ -1,9 +1,9 @@
 package echo
 
 import (
-  "strings"
+	"strings"
 )
 
 func catStrsJoin(args []string) {
-  strings.Join(args, " ")
+	strings.Join(args, " ")
 }

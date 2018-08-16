@@ -1,58 +1,58 @@
 package main
 
 import (
-  "image"
-  "image/color"
-  "image/gif"
-  "io"
-  "math"
-  "math/rand"
-  "os"
-  "time"
+	"image"
+	"image/color"
+	"image/gif"
+	"io"
+	"math"
+	"math/rand"
+	"os"
+	"time"
 )
 
 var palette = []color.Color{color.Black}
 
 func main() {
-  rand.Seed(time.Now().UTC().UnixNano())
-  for i := 0; i < 0xff; i++ {
-    palette = append(palette, color.RGBA{
-      gradation(i), gradation(i*2), gradation(i*4), 0xff,
-    })
-  }
-  lissajous(os.Stdout)
+	rand.Seed(time.Now().UTC().UnixNano())
+	for i := 0; i < 0xff; i++ {
+		palette = append(palette, color.RGBA{
+			gradation(i), gradation(i * 2), gradation(i * 4), 0xff,
+		})
+	}
+	lissajous(os.Stdout)
 }
 
 func gradation(n int) uint8 {
-  return uint8(math.Abs(float64(0x100 - n % 0x200)))
+	return uint8(math.Abs(float64(0x100 - n%0x200)))
 }
 
 func lissajous(out io.Writer) {
-  const (
-    cycles = 18
-    res = 0.001
-    size = 300
-    nframes = 64
-    delay = 8
-  )
-  freq := rand.Float64() * 3.0
-  anim := gif.GIF{LoopCount: nframes}
-  phase := 0.0
-  for i := 0; i < nframes; i++ {
-    rect := image.Rect(0, 0, 2*size+1, 2*size+1)
-    img := image.NewPaletted(rect, palette)
-    for t := 0.0; t < cycles*2*math.Pi; t += res {
-      x := math.Sin(t)
-      y := math.Sin(t*freq + phase)
-      img.SetColorIndex(
-        size+int(x*size+0.5),
-        size+int(y*size+0.5),
-        gradation(int(t / res)),
-      )
-    }
-    phase += 0.1
-    anim.Delay = append(anim.Delay, delay)
-    anim.Image = append(anim.Image, img)
-  }
-  gif.EncodeAll(out, &anim)
+	const (
+		cycles  = 18
+		res     = 0.001
+		size    = 300
+		nframes = 64
+		delay   = 8
+	)
+	freq := rand.Float64() * 3.0
+	anim := gif.GIF{LoopCount: nframes}
+	phase := 0.0
+	for i := 0; i < nframes; i++ {
+		rect := image.Rect(0, 0, 2*size+1, 2*size+1)
+		img := image.NewPaletted(rect, palette)
+		for t := 0.0; t < cycles*2*math.Pi; t += res {
+			x := math.Sin(t)
+			y := math.Sin(t*freq + phase)
+			img.SetColorIndex(
+				size+int(x*size+0.5),
+				size+int(y*size+0.5),
+				gradation(int(t/res)),
+			)
+		}
+		phase += 0.1
+		anim.Delay = append(anim.Delay, delay)
+		anim.Image = append(anim.Image, img)
+	}
+	gif.EncodeAll(out, &anim)
 }

@@ -12,6 +12,11 @@ func isAnagram(s1, s2 string) bool {
 			return false
 		}
 	}
+	for k, v := range m2 {
+		if m1[k] != v {
+			return false
+		}
+	}
 	return true
 }
 

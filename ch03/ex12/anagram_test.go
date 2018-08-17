@@ -20,7 +20,7 @@ func TestAnagramTrue(t *testing.T) {
 	}
 }
 
-func TestAnagramFalse(t *testing.T) {
+func TestAnagramFalse1(t *testing.T) {
 	actual := isAnagram("ABCDEFGH", "HIJKLMNO")
 	expected := false
 	if actual != expected {
@@ -28,7 +28,15 @@ func TestAnagramFalse(t *testing.T) {
 	}
 }
 
-func TestAnagramDuplicateFalse(t *testing.T) {
+func TestAnagramFalse2(t *testing.T) {
+	actual := isAnagram("A", "ABBB")
+	expected := false
+	if actual != expected {
+		t.Errorf("actual %v want %v", actual, expected)
+	}
+}
+
+func TestAnagramDuplicateFalse1(t *testing.T) {
 	actual := isAnagram("ABCDEFG", "ABCDEFGG")
 	expected := false
 	if actual != expected {

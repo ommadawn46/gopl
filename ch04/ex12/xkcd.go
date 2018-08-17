@@ -100,7 +100,7 @@ func downloadInfos(startNum int, endNum int) []Info {
   var infos []Info
   for num := startNum; num <= endNum; num++ {
     indicator := []string{"/", "-", "\\", "|"}
-    fmt.Printf("[%s] Downloading comic information .. %d / %d\r", indicator[num%4], num, (endNum-startNum)+1)
+    fmt.Printf("[%s] Downloading comic information .. %d / %d\r", indicator[num%4], (num-startNum)+1, (endNum-startNum)+1)
     info, _ := getInfoByNum(num)
     infos = append(infos, info)
   }

@@ -11,22 +11,24 @@ import (
 
 func main() {
 	const (
+		ssRate = 5
 		xmin, ymin, xmax, ymax = -2, -2, +2, +2
-		width, height          = 1024, 1024
+		width, height = 1024, 1024
+		sWidth, sHeight = width*ssRate, height*ssRate
 	)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	for py := 0; py < height; py++ {
-		for px := 0; px < width; px++ {
+	for py := 0; py < sWidth; py+=ssRate {
+		for px := 0; px < sHeight; px+=ssRate {
 			var subPixels []color.Color
-			for py_ := py; py_ < py+2; py_++ {
-				for px_ := px; px_ < px+2; px_++ {
-					y := float64(py_)/height*(ymax-ymin) + ymin
-					x := float64(px_)/width*(xmax-xmin) + xmin
+			for py_ := py; py_ < py+ssRate; py_++ {
+				for px_ := px; px_ < px+ssRate; px_++ {
+					y := float64(py_)/sWidth*(ymax-ymin) + ymin
+					x := float64(px_)/sHeight*(xmax-xmin) + xmin
 					z := complex(x, y)
 					subPixels = append(subPixels, mandelbrot(z))
 				}
 			}
-			img.Set(px, py, colorsAverage(subPixels))
+			img.Set(px/ssRate, py/ssRate, colorsAverage(subPixels))
 		}
 	}
 	png.Encode(os.Stdout, img)

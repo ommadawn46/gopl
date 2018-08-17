@@ -50,7 +50,7 @@ func main() {
         repo = params[0]
       }
     }
-    _, issues, _ := github.GetIssues(owner, repo)
+    issues, _ := github.GetIssues(owner, repo)
 
     issuesResult := IssuesResult{issues}
     if err := issueListTemplate.Execute(w, issuesResult); err != nil {

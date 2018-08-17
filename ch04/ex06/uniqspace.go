@@ -9,21 +9,20 @@ func uniqspace(bytes []byte) []byte {
 	if len(bytes) <= 0 {
 		return bytes
 	}
-	blank := 0
-	isPrevSpace := false
+	size := 0
+	prevIsSpace := false
 	for i := 0; i < len(bytes); {
 		r, s := utf8.DecodeRune(bytes[i:])
 		isSpace := unicode.IsSpace(r)
-		if isPrevSpace && isSpace {
-			blank += s
-		} else if isSpace {
-			bytes[i-blank] = byte(' ')
-			blank += s - 1
-		} else {
-			copy(bytes[i-blank:], bytes[i:i+s])
+		if !prevIsSpace && isSpace {
+			bytes[size] = byte(' ')
+			size += 1
+		} else if !isSpace {
+			copy(bytes[size:], bytes[i:i+s])
+			size += s
 		}
-		isPrevSpace = isSpace
+		prevIsSpace = isSpace
 		i += s
 	}
-	return bytes[:len(bytes)-blank]
+	return bytes[:size]
 }

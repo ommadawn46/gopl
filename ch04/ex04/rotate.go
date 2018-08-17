@@ -1,12 +1,16 @@
 package rotate
 
 func rotate(s []int, r int) {
-	if len(s) <= 0 {
+	n := len(s)
+	if n <= 0 {
 		return
 	}
-	r = r % len(s)
+	for r < 0 {
+		r += n
+	}
+	r %= n
 	t := make([]int, r)
 	copy(t, s[:r])
 	copy(s, s[r:])
-	copy(s[len(s)-r:], t)
+	copy(s[n-r:], t)
 }

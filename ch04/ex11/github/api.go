@@ -5,51 +5,60 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"fmt"
 	"strconv"
 	"strings"
 )
 
-func GetIssue(owner string, repo string, number int) (int, Issue, error) {
+func GetIssue(owner string, repo string, number int) (Issue, error) {
 	var issue Issue
 
 	url := GetIssuesURL(owner, repo) + "/" + strconv.Itoa(number)
 	resp, err := http.Get(url)
 	if err != nil {
-		return 0, issue, err
+		return issue, err
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
-		return 0, issue, err
+	if resp.StatusCode != 200 {
+		return issue, fmt.Errorf("%d: Failed to get Issue\n", resp.StatusCode)
 	}
 
-	return resp.StatusCode, issue, nil
+	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
+		return issue, err
+	}
+
+	return issue, nil
 }
 
-func GetIssues(owner string, repo string) (int, []Issue, error) {
+func GetIssues(owner string, repo string) ([]Issue, error) {
 	var issues []Issue
 
 	url := GetIssuesURL(owner, repo)
 	resp, err := http.Get(url)
 	if err != nil {
-		return 0, issues, err
+		return issues, err
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&issues); err != nil {
-		return 0, issues, err
+	if resp.StatusCode != 200 {
+		return issues, fmt.Errorf("%d: Failed to get Issues\n", resp.StatusCode)
 	}
 
-	return resp.StatusCode, issues, nil
+	if err := json.NewDecoder(resp.Body).Decode(&issues); err != nil {
+		return issues, err
+	}
+
+	return issues, nil
 }
 
-func CreateIssue(owner string, repo string, title string, body string) (int, Issue, error) {
+func CreateIssue(owner string, repo string, title string, body string) (Issue, error) {
 	var issue Issue
 
 	issuePost := IssuePost{strings.TrimSpace(title), strings.TrimSpace(body)}
 	jsonBytes, err := json.Marshal(issuePost)
 	if err != nil {
-		return 0, issue, err
+		return issue, err
 	}
 
 	client := new(http.Client)
@@ -58,17 +67,22 @@ func CreateIssue(owner string, repo string, title string, body string) (int, Iss
 	req.SetBasicAuth(os.Getenv("GH_USER"), os.Getenv("GH_PASS"))
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, issue, err
+		return issue, err
+	}
+
+	if resp.StatusCode != 201 {
+		return issue, fmt.Errorf("%d: Failed to create Issue\n", resp.StatusCode)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
-		return resp.StatusCode, issue, err
+		return issue, err
 	}
-	return resp.StatusCode, issue, nil
+
+	return issue, nil
 }
 
 func EditIssue(owner string, repo string, number int,
-	title string, body string, open bool) (int, Issue, error) {
+	title string, body string, open bool) (Issue, error) {
 	var issue Issue
 
 	state := "open"
@@ -79,7 +93,7 @@ func EditIssue(owner string, repo string, number int,
 	issuePatch := IssuePatch{strings.TrimSpace(title), strings.TrimSpace(body), state}
 	jsonBytes, err := json.Marshal(issuePatch)
 	if err != nil {
-		return 0, issue, err
+		return issue, err
 	}
 
 	client := new(http.Client)
@@ -88,11 +102,15 @@ func EditIssue(owner string, repo string, number int,
 	req.SetBasicAuth(os.Getenv("GH_USER"), os.Getenv("GH_PASS"))
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, issue, err
+		return issue, err
+	}
+
+	if resp.StatusCode != 200 {
+		return issue, fmt.Errorf("%d: Failed to edit Issue\n", resp.StatusCode)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&issue); err != nil {
-		return resp.StatusCode, issue, err
+		return issue, err
 	}
-	return resp.StatusCode, issue, nil
+	return issue, nil
 }

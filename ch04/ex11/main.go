@@ -46,23 +46,17 @@ func printIssue(issue github.Issue) {
 
 func read(owner string, repo string, number int) error {
 	if number <= 0 {
-		statusCode, issues, err := github.GetIssues(owner, repo)
+		issues, err := github.GetIssues(owner, repo)
 		if err != nil {
 			return err
-		}
-		if statusCode != 200 {
-			return fmt.Errorf("%d: Failed to get Issue during Read\n", statusCode)
 		}
 		for _, issue := range issues {
 			printIssue(issue)
 		}
 	} else {
-		statusCode, issue, err := github.GetIssue(owner, repo, number)
+		issue, err := github.GetIssue(owner, repo, number)
 		if err != nil {
 			return err
-		}
-		if statusCode != 200 {
-			return fmt.Errorf("%d: Failed to get Issue during Read\n", statusCode)
 		}
 		printIssue(issue)
 	}
@@ -80,27 +74,20 @@ func create(owner string, repo string) error {
 		return err
 	}
 
-	statusCode, issue, err := github.CreateIssue(owner, repo, title, body)
+	issue, err := github.CreateIssue(owner, repo, title, body)
 	if err != nil {
 		return err
 	}
 
-	if statusCode != 201 {
-		return fmt.Errorf("%d: Failed to create Issue\n", statusCode)
-	}
-
-	fmt.Printf("\n%d: Successfully created Issue\n", statusCode)
+	fmt.Println("\nSuccessfully created Issue")
 	printIssue(issue)
 	return nil
 }
 
 func edit(owner string, repo string, number int) error {
-	statusCode, issue, err := github.GetIssue(owner, repo, number)
+	issue, err := github.GetIssue(owner, repo, number)
 	if err != nil {
 		return err
-	}
-	if statusCode != 200 {
-		return fmt.Errorf("%d: Failed to get Issue during Edit\n", statusCode)
 	}
 
 	title, err := editWithEditor(issue.Title)
@@ -113,39 +100,28 @@ func edit(owner string, repo string, number int) error {
 		return err
 	}
 
-	statusCode, issue, err = github.EditIssue(owner, repo, number, title, body, true)
+	issue, err = github.EditIssue(owner, repo, number, title, body, true)
 	if err != nil {
 		return err
 	}
 
-	if statusCode != 200 {
-		return fmt.Errorf("%d: Failed to edit Issue\n", statusCode)
-	}
-
-	fmt.Printf("\n%d: Successfully edited Issue\n", statusCode)
+	fmt.Println("\nSuccessfully edited Issue")
 	printIssue(issue)
 	return nil
 }
 
 func close(owner string, repo string, number int) error {
-	statusCode, issue, err := github.GetIssue(owner, repo, number)
-	if err != nil {
-		return err
-	}
-	if statusCode != 200 {
-		return fmt.Errorf("%d: Failed to get Issue during Close\n", statusCode)
-	}
-
-	statusCode, issue, err = github.EditIssue(owner, repo, number, issue.Title, issue.Body, false)
+	issue, err := github.GetIssue(owner, repo, number)
 	if err != nil {
 		return err
 	}
 
-	if statusCode != 200 {
-		return fmt.Errorf("%d: Failed to close Issue\n", statusCode)
+	issue, err = github.EditIssue(owner, repo, number, issue.Title, issue.Body, false)
+	if err != nil {
+		return err
 	}
 
-	fmt.Printf("\n%d: Successfully closed Issue\n", statusCode)
+	fmt.Println("\nSuccessfully closed Issue")
 	printIssue(issue)
 	return nil
 }

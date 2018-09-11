@@ -1,10 +1,10 @@
 package main
 
 import (
-  "html/template"
-  "net/http"
-  "log"
-  "./github"
+	"./github"
+	"html/template"
+	"log"
+	"net/http"
 )
 
 var issueListTemplate = template.Must(template.New("issuelist").Parse(`
@@ -34,28 +34,28 @@ var issueListTemplate = template.Must(template.New("issuelist").Parse(`
 `))
 
 type IssuesResult struct {
-	Items         []github.Issue
+	Items []github.Issue
 }
 
 func main() {
-  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    var owner, repo string
-    if err := r.ParseForm(); err != nil {
-      log.Print(err)
-    } else {
-      if params, ok := r.Form["owner"]; ok {
-        owner = params[0]
-      }
-      if params, ok := r.Form["repo"]; ok {
-        repo = params[0]
-      }
-    }
-    issues, _ := github.GetIssues(owner, repo)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var owner, repo string
+		if err := r.ParseForm(); err != nil {
+			log.Print(err)
+		} else {
+			if params, ok := r.Form["owner"]; ok {
+				owner = params[0]
+			}
+			if params, ok := r.Form["repo"]; ok {
+				repo = params[0]
+			}
+		}
+		issues, _ := github.GetIssues(owner, repo)
 
-    issuesResult := IssuesResult{issues}
-    if err := issueListTemplate.Execute(w, issuesResult); err != nil {
-      log.Print(err)
-    }
-  })
-  http.ListenAndServe("localhost:8000", nil)
+		issuesResult := IssuesResult{issues}
+		if err := issueListTemplate.Execute(w, issuesResult); err != nil {
+			log.Print(err)
+		}
+	})
+	http.ListenAndServe("localhost:8000", nil)
 }

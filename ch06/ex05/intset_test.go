@@ -1,8 +1,8 @@
 package intset
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 )
 
 func TestIntSetEmpty(t *testing.T) {
@@ -165,7 +165,6 @@ func TestIntSetAddAll(t *testing.T) {
 		t.Errorf("actual %v want %v", actual, expected)
 	}
 }
-
 
 func TestIntSetIntersectWith(t *testing.T) {
 	s1 := &IntSet{}

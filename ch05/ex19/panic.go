@@ -6,9 +6,9 @@ import (
 
 func echo(s string) (r string) {
 	defer func() {
-    if p := recover(); p != nil{
-      r = p.(string)
-    }
+		if p := recover(); p != nil {
+			r = p.(string)
+		}
 	}()
 	panic(s)
 }

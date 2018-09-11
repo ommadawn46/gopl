@@ -11,14 +11,14 @@ import (
 
 func main() {
 	const (
-		ssRate = 5
+		ssRate                 = 5
 		xmin, ymin, xmax, ymax = -2, -2, +2, +2
-		width, height = 1024, 1024
-		sWidth, sHeight = width*ssRate, height*ssRate
+		width, height          = 1024, 1024
+		sWidth, sHeight        = width * ssRate, height * ssRate
 	)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	for py := 0; py < sWidth; py+=ssRate {
-		for px := 0; px < sHeight; px+=ssRate {
+	for py := 0; py < sWidth; py += ssRate {
+		for px := 0; px < sHeight; px += ssRate {
 			var subPixels []color.Color
 			for py_ := py; py_ < py+ssRate; py_++ {
 				for px_ := px; px_ < px+ssRate; px_++ {

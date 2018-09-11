@@ -1,15 +1,14 @@
 package expand
 
 import (
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestExpand(t *testing.T) {
-	for _, test := range []struct
-	{
-		s string
-		f func(string)string
+	for _, test := range []struct {
+		s        string
+		f        func(string) string
 		expected string
 	}{
 		{"", strings.ToUpper, ""},
@@ -23,7 +22,7 @@ func TestExpand(t *testing.T) {
 		{"$abcd efgh ijkl", strings.Title, "Abcd efgh ijkl"},
 		{"abcd $efgh ijkl", strings.Title, "abcd Efgh ijkl"},
 		{"$abcd $efgh $ijkl", strings.Title, "Abcd Efgh Ijkl"},
-	}{
+	} {
 		actual := expand(test.s, test.f)
 		if actual != test.expected {
 			t.Errorf("actual %v want %v", actual, test.expected)

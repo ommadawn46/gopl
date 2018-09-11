@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 
 	"./links"

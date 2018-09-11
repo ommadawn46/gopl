@@ -89,7 +89,7 @@ func (s *IntSet) Len() int {
 func (s *IntSet) Remove(x int) {
 	word, bit := x/64, uint(x%64)
 	s.words[word] |= 1 << bit
-  s.words[word] ^= 1 << bit
+	s.words[word] ^= 1 << bit
 }
 
 func (s *IntSet) Clear() {
@@ -130,7 +130,7 @@ func (s *IntSet) Elems() (elems []int) {
 		bit := uint(0)
 		for (word >> bit) > 0 {
 			bit += 1
-			if (word >> bit) & 1 == 1 {
+			if (word>>bit)&1 == 1 {
 				elems = append(elems, int(bit)+i*64)
 			}
 		}

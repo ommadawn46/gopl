@@ -23,7 +23,7 @@ func fetch(url string) (filename string, n int64, err error) {
 	if err != nil {
 		return "", 0, err
 	}
-  fileClose := func() {
+	fileClose := func() {
 		if c_err := f.Close(); c_err == nil {
 			err = c_err
 		}
@@ -41,6 +41,6 @@ func main() {
 			fmt.Fprintf(os.Stderr, "fetch %s: %v\n", s_url, err)
 			continue
 		}
-    fmt.Printf("save %s, %d bytes\n", filename, n)
+		fmt.Printf("save %s, %d bytes\n", filename, n)
 	}
 }

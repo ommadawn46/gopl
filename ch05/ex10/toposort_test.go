@@ -5,29 +5,28 @@ import (
 )
 
 func check(order []string) bool {
-  contains := func(s []string, t string) bool {
-    for _, a := range s {
-      if a == t {
-        return true
-      }
-    }
-    return false
-  }
-  for i, item := range order {
-    dependencies := prereqs[item]
-    for _, depend_item := range dependencies {
-      if !contains(order[:i], depend_item) {
-        return false
-      }
-    }
-  }
-  return true
+	contains := func(s []string, t string) bool {
+		for _, a := range s {
+			if a == t {
+				return true
+			}
+		}
+		return false
+	}
+	for i, item := range order {
+		dependencies := prereqs[item]
+		for _, depend_item := range dependencies {
+			if !contains(order[:i], depend_item) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func TestCheck(t *testing.T) {
-	for _, test := range []struct
-	{
-		order []string
+	for _, test := range []struct {
+		order    []string
 		expected bool
 	}{
 		{
@@ -98,7 +97,7 @@ func TestCheck(t *testing.T) {
 				"algorithms",
 			}, false,
 		},
-	}{
+	} {
 		actual := check(test.order)
 		if actual != test.expected {
 			t.Errorf("actual %v want %v", actual, test.expected)

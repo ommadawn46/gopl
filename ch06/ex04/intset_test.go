@@ -1,8 +1,8 @@
 package intset
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 )
 
 func TestIntSetEmptyElems(t *testing.T) {

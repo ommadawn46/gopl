@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestLineRead(t *testing.T) {
+func TestReaderRead(t *testing.T) {
 	r := NewReader("ABCDEFGH")
 	buf := make([]byte, 16)
 	r.Read(buf)
@@ -19,7 +19,7 @@ func TestLineRead(t *testing.T) {
 	}
 }
 
-func TestLineReadAll(t *testing.T) {
+func TestReaderReadAll(t *testing.T) {
 	r := NewReader("ABCDEFGH")
 	actual, _ := ioutil.ReadAll(r)
 	expected := []byte{65, 66, 67, 68, 69, 70, 71, 72}
@@ -28,7 +28,7 @@ func TestLineReadAll(t *testing.T) {
 	}
 }
 
-func TestLineCopy(t *testing.T) {
+func TestReaderCopy(t *testing.T) {
 	r := NewReader("ABCDEFGH")
 	buf := new(bytes.Buffer)
 	io.Copy(buf, r)

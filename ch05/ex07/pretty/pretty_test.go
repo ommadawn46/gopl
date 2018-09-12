@@ -7,7 +7,7 @@ import (
 func TestPrettyEmpty(t *testing.T) {
 	actual, _ := Pretty("")
 	expected :=
-`<html>
+		`<html>
   <head/>
   <body/>
 </html>
@@ -20,7 +20,7 @@ func TestPrettyEmpty(t *testing.T) {
 func TestPrettyA(t *testing.T) {
 	actual, _ := Pretty("<a href=\"https://golang.org\">golang</a>")
 	expected :=
-`<html>
+		`<html>
   <head/>
   <body>
     <a href="https://golang.org">
@@ -36,7 +36,7 @@ func TestPrettyA(t *testing.T) {
 
 func TestPrettyHeadBody(t *testing.T) {
 	actual, _ := Pretty(
-`<title>Test</title>
+		`<title>Test</title>
 <script type="text/javascript">
 var foo = 'foo';
 var bar = 'bar';
@@ -47,7 +47,7 @@ var foobar = foo + bar;
 `)
 
 	expected :=
-`<html>
+		`<html>
   <head>
     <title>
       Test
@@ -76,7 +76,7 @@ var foobar = foo + bar;
 // http://www.gopl.io/
 func TestPrettyGoplIo(t *testing.T) {
 	actual, _ := Pretty(
-`<html xmlns="http://www.w3.org/1999/xhtml">
+		`<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta name="go-import" content="gopl.io git https://github.com/adonovan/gopl.io"></meta>
   <title>The Go Programming Language</title>
@@ -203,7 +203,7 @@ He is the co-author of several books, including
 `)
 
 	expected :=
-`<html xmlns="http://www.w3.org/1999/xhtml">
+		`<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta name="go-import" content="gopl.io git https://github.com/adonovan/gopl.io"/>
     <title>

@@ -3,4 +3,4 @@
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 cd $SCRIPTPATH
 
-go run demo.go
+go test -v

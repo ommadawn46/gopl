@@ -18,7 +18,7 @@ type Issue struct {
 	Title     string
 	State     string
 	User      *User
-	Milestone	*Milestone
+	Milestone *Milestone
 	CreatedAt time.Time `json:"created_at"`
 	Body      string
 }
@@ -29,10 +29,10 @@ type User struct {
 }
 
 type Milestone struct {
-	HTMLURL   string `json:"html_url"`
-	Title     string
-	State     string
-	Desctiption	string
-	CreatedAt time.Time `json:"created_at"`
-	Creator		*User
+	HTMLURL     string `json:"html_url"`
+	Title       string
+	State       string
+	Desctiption string
+	CreatedAt   time.Time `json:"created_at"`
+	Creator     *User
 }

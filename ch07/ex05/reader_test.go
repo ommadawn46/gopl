@@ -10,7 +10,7 @@ import (
 	"../ex04"
 )
 
-func TestLineRead(t *testing.T) {
+func TestReaderRead(t *testing.T) {
 	r := reader.NewReader("ABCDEFGH")
 	lr := LimitReader(r, 6)
 	buf := make([]byte, 3)
@@ -29,7 +29,7 @@ func TestLineRead(t *testing.T) {
 	}
 }
 
-func TestLineReadAll(t *testing.T) {
+func TestReaderReadAll(t *testing.T) {
 	r := reader.NewReader("ABCDEFGH")
 	lr := LimitReader(r, 4)
 	actual, _ := ioutil.ReadAll(lr)
@@ -39,7 +39,7 @@ func TestLineReadAll(t *testing.T) {
 	}
 }
 
-func TestLineCopy(t *testing.T) {
+func TestReaderCopy(t *testing.T) {
 	r := reader.NewReader("ABCDEFGH")
 	lr := LimitReader(r, 4)
 	buf := new(bytes.Buffer)

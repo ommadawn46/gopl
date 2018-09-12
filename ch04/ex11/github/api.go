@@ -3,9 +3,9 @@ package github
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
-	"fmt"
 	"strconv"
 	"strings"
 )

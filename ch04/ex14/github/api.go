@@ -2,9 +2,9 @@ package github
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
-	"fmt"
 )
 
 func GetIssue(owner string, repo string, number int) (Issue, error) {

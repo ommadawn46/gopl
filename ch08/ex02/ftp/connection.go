@@ -14,19 +14,19 @@ type Connection struct {
 
 var _ASCII_REPLACER = strings.NewReplacer("\r\n", "\r\n", "\r", "\r\n", "\n", "\r\n")
 
-func (c *Connection) Readline() (string, error) {
+func (c *Connection) readline() (string, error) {
 	return bufio.NewReader(c).ReadString('\n')
 }
 
-func (c *Connection) Sendline(str string) (int, error) {
+func (c *Connection) sendline(str string) (int, error) {
 	return io.WriteString(c, str+"\n")
 }
 
-func (c *Connection) SendResponce(code int, message string) (int, error) {
-	return c.Sendline(fmt.Sprintf("%d %s", code, message))
+func (c *Connection) sendResponce(code int, message string) (int, error) {
+	return c.sendline(fmt.Sprintf("%d %s", code, message))
 }
 
-func (c *Connection) ReadAll() ([]byte, error) {
+func (c *Connection) readAll() ([]byte, error) {
 	var buf []byte
 	for {
 		tmp := make([]byte, 65536)
@@ -41,7 +41,7 @@ func (c *Connection) ReadAll() ([]byte, error) {
 	return buf, nil
 }
 
-func (c *Connection) SendAll(buf []byte) error {
+func (c *Connection) sendAll(buf []byte) error {
 	for len(buf) > 0 {
 		n, err := c.Write(buf)
 		if err != nil {
@@ -52,8 +52,8 @@ func (c *Connection) SendAll(buf []byte) error {
 	return nil
 }
 
-func (c *Connection) ReadAllAsAscii() ([]byte, error) {
-	buf, err := c.ReadAll()
+func (c *Connection) readAllAsAscii() ([]byte, error) {
+	buf, err := c.readAll()
 	if err != nil {
 		return nil, err
 	}
@@ -61,10 +61,10 @@ func (c *Connection) ReadAllAsAscii() ([]byte, error) {
 	return []byte(ascii), nil
 }
 
-func (c *Connection) SendAllAsAscii(buf []byte) error {
+func (c *Connection) sendAllAsAscii(buf []byte) error {
 	ascii := _ASCII_REPLACER.Replace(string(buf))
 	buf = []byte(ascii)
-	if err := c.SendAll(buf); err != nil {
+	if err := c.sendAll(buf); err != nil {
 		return err
 	}
 	return nil

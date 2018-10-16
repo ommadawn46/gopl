@@ -35,6 +35,12 @@ put clientfile.txt uploaded1.txt
 binary
 get serverfile.png downloaded1.png
 put clientfile.png uploaded1.png
+
+size uploaded1.txt
+size uploaded1.png
+
+modtime uploaded1.txt
+modtime uploaded1.png
 bye
 EOF
 
@@ -50,6 +56,12 @@ put clientfile.txt uploaded2.txt
 binary
 get serverfile.png downloaded2.png
 put clientfile.png uploaded2.png
+
+size uploaded2.txt
+size uploaded2.png
+
+modtime uploaded2.txt
+modtime uploaded2.png
 bye
 EOF
 
@@ -61,16 +73,20 @@ user test3 p455w0rd
 mkdir dir1
 mkdir dir1/dir2
 mkdir dir1/dir2/dir3
+ls
 cd dir1/dir2/dir3
 pwd
 put clientfile.png uploaded.png
-ls
-delete uploaded.png
-ls
+nlist
+rename uploaded.png renamed.png
+nlist
+delete renamed.png
+nlist
 cd /
 rmdir dir1/dir2/dir3
 rmdir dir1/dir2
 rmdir dir1
+ls
 bye
 EOF
 

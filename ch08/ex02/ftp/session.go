@@ -1,98 +1,64 @@
 package ftp
 
 import (
+	"fmt"
 	"log"
 	"net"
-	"path/filepath"
 	"strings"
 )
 
 type Session struct {
-	Status
-
-	conn     Connection
-	dataPort DataPort
+	worker Worker
+	conn   Connection
 }
 
-type Status struct {
-	Directory
-
-	username     string
-	loggedIn     bool
-	transferType TransferType
-}
-
-type Directory struct {
-	RootDir string
-	WorkDir string
-}
-
-func (d *Directory) JoinPath(path string) string {
-	newPath := filepath.Clean(path)
-	if strings.HasPrefix("/", newPath) {
-		newPath = filepath.Join(d.RootDir, newPath)
-	} else {
-		newPath = filepath.Join(d.RootDir, d.WorkDir, newPath)
-	}
-	if !strings.HasPrefix(newPath, d.RootDir) {
-		newPath = d.RootDir
-	}
-	return newPath
-}
-
-type TransferType int
-
-const (
-	ASCII TransferType = iota
-	BINARY
-)
-
-func (t TransferType) String() string {
-	switch t {
-	case ASCII:
-		return "ASCII"
-	case BINARY:
-		return "BINARY"
-	default:
-		return "UNKNOWN"
-	}
-}
-
-func (s *Session) Run() {
+func (s *Session) run() {
 	defer s.conn.Close()
-	s.conn.SendResponce(220, "Ready")
+	s.conn.sendResponce(220, "Ready")
 	for {
-		recv, err := s.conn.Readline()
+		recv, err := s.conn.readline()
 		if err != nil {
 			return
 		}
 		recv = strings.TrimSpace(recv)
 		log.Printf("[%v] %s", s.conn.RemoteAddr(), recv)
 
-		var cmd, arg string
-		spaceIdx := strings.Index(recv, " ")
-		if spaceIdx != -1 {
-			cmd, arg = strings.ToUpper(recv[:spaceIdx]), recv[spaceIdx+1:]
-		} else {
-			cmd, arg = strings.ToUpper(recv), ""
-		}
-		code, message := s.execCommand(cmd, arg)
-
-		s.conn.SendResponce(code, message)
-		if code == 221 {
-			// QUIT
-			break
-		}
+		go func() {
+			var cmdName, arg string
+			spaceIdx := strings.Index(recv, " ")
+			if spaceIdx != -1 {
+				cmdName, arg = recv[:spaceIdx], recv[spaceIdx+1:]
+			} else {
+				cmdName, arg = recv, ""
+			}
+			cmd, ok := _COMMANDS[strings.ToUpper(cmdName)]
+			if !ok {
+				s.conn.sendResponce(500, "Unknown command")
+				return
+			}
+			if cmd.hasAttribute(useDataPort) {
+				s.conn.sendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.worker.transferType))
+			}
+			code, message := s.worker.call(cmd, arg)
+			s.conn.sendResponce(code, message)
+			if code == 221 {
+				s.conn.Close() // QUIT
+			}
+		}()
 	}
 }
 
-func NewSession(conn net.Conn, rootDir string) *Session {
-	status := Status{}
-	status.transferType = ASCII
-	status.RootDir = rootDir
-
+func newSession(conn net.Conn, rootDir string) *Session {
+	directory := Directory{}
+	directory.rootDir = rootDir
+	worker := Worker{
+		directory,
+		"",
+		"",
+		false,
+		_ASCII,
+		DataPort{},
+	}
 	connection := Connection{conn}
-	dataPort := DataPort{}
-
-	return &Session{status, connection, dataPort}
+	return &Session{worker, connection}
 }

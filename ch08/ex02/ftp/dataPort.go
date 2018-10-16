@@ -12,7 +12,7 @@ type DataPort struct {
 	pasvMode bool
 }
 
-func (d *DataPort) Connect() (*Connection, error) {
+func (d *DataPort) connect() (*Connection, error) {
 	var conn net.Conn
 	var err error
 

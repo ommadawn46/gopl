@@ -5,376 +5,420 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func (s *Session) execCommand(cmd string, arg string) (int, string) {
-	if !s.loggedIn {
-		if cmd != "NOOP" && cmd != "PASS" && cmd != "QUIT" && cmd != "USER" {
-			return 530, "Please login with USER and PASS"
+type Attribute int
+
+const (
+	needsArg     Attribute = iota // 要引数
+	needsLogin                    // 要ログイン
+	mustNotLogin                  // ログイン前のみ実行可能
+	useDataPort                   // データポートを使用する
+)
+
+type Command struct {
+	exec  func(*Worker, string) (int, string)
+	attrs []Attribute
+}
+
+func (c *Command) hasAttribute(t Attribute) bool {
+	for _, a := range c.attrs {
+		if a == t {
+			return true
 		}
 	}
-	switch cmd {
-	case "CWD":
-		return s.cwd(arg)
-	case "DELE":
-		return s.dele(arg)
-	case "LIST":
-		return s.list(arg)
-	case "MKD":
-		return s.mkd(arg)
-	case "MODE":
-		return s.mode(arg)
-	case "NOOP":
-		return s.noop(arg)
-	case "PASS":
-		return s.pass(arg)
-	case "PASV":
-		return s.pasv(arg)
-	case "PORT":
-		return s.port(arg)
-	case "PWD":
-		return s.pwd(arg)
-	case "QUIT":
-		return s.quit(arg)
-	case "RETR":
-		return s.retr(arg)
-	case "RMD":
-		return s.rmd(arg)
-	case "STOR":
-		return s.stor(arg)
-	case "STRU":
-		return s.stru(arg)
-	case "TYPE":
-		return s.type_(arg)
-	case "USER":
-		return s.user(arg)
-	default:
-		return 500, "Unknown command"
-	}
+	return false
 }
 
-func (s *Session) cwd(arg string) (int, string) {
-	if arg == "" {
-		return 501, "CWD command requires a parameter"
-	}
+var _COMMANDS = map[string]Command{
+	"CWD": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if !isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Not a directory", arg)
+			}
+			w.workDir = strings.TrimLeft(path[len(w.rootDir):], "/\\")
+			return 250, "CWD command successful"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"DELE": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Is a directory", arg)
+			}
+			if err := os.Remove(path); err != nil {
+				return 550, fmt.Sprintf("%s: Failed to delete a file", arg)
+			}
+			return 250, "DELE command successful"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"LIST": {
+		exec: func(w *Worker, arg string) (int, string) {
+			return w.sendOsCommandOutput("ls", "-la", w.joinPath(arg))
+		},
+		attrs: []Attribute{
+			needsLogin,
+			useDataPort,
+		},
+	},
+	"MDTM": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Is a directory", arg)
+			}
+			fileInfo, _ := os.Stat(path)
+			return 213, fileInfo.ModTime().Format("20060102150405")
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"MKD": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(filepath.Dir(path)) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if existsPath(path) && !isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Not a directory", arg)
+			}
+			if err := os.Mkdir(path, 0755); err != nil {
+				return 550, fmt.Sprintf("%s: Failed to make a directory", arg)
+			}
+			return 257, fmt.Sprintf("\"%s\" - Directory successfully created", arg)
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"MODE": {
+		exec: func(w *Worker, arg string) (int, string) {
+			mode := strings.ToUpper(arg)
+			switch mode {
+			case "S":
+				return 200, "Mode set to S"
+			case "B", "C":
+				return 504, fmt.Sprintf("'MODE %s' unsupported transfer mode", mode)
+			default:
+				return 501, fmt.Sprintf("'MODE %s' unrecognized transfer mode", mode)
+			}
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"NLST": {
+		exec: func(w *Worker, arg string) (int, string) {
+			return w.sendOsCommandOutput("ls", w.joinPath(arg))
+		},
+		attrs: []Attribute{
+			needsLogin,
+			useDataPort,
+		},
+	},
+	"NOOP": {
+		exec: func(w *Worker, arg string) (int, string) {
+			return 200, "NOOP command successful"
+		},
+		attrs: []Attribute{},
+	},
+	"PASS": {
+		exec: func(w *Worker, arg string) (int, string) {
+			if w.username == "" {
+				return 503, "Login with USER first"
+			}
+			if !auth(w.username, arg) {
+				w.username = ""
+				return 530, "Login incorrect"
+			}
+			w.loggedIn = true
+			return 230, fmt.Sprintf("User %v logged in", w.username)
+		},
+		attrs: []Attribute{
+			mustNotLogin,
+			needsArg,
+		},
+	},
+	"PASV": {
+		exec: func(w *Worker, arg string) (int, string) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				return 500, "Cannot listen to port"
+			}
+			w.dataPort.listener = listener
 
-	path := s.JoinPath(arg)
-	fileInfo, err := os.Stat(path)
-	if err != nil || !fileInfo.IsDir() {
-		return 550, fmt.Sprintf("%s: No such file or directory", arg)
-	}
-	s.WorkDir = strings.TrimLeft(path[len(s.RootDir):], "/\\")
+			tcpAddr, _ := listener.Addr().(*net.TCPAddr)
+			addr, port := tcpAddr.IP.String(), tcpAddr.Port
+			port1, port2 := port/0x100, port%0x100
 
-	return 250, "CWD command successful"
-}
+			w.dataPort.pasvMode = true
+			return 227, fmt.Sprintf(
+				"Entering Passive Mode (%s,%d,%d)",
+				strings.Replace(addr, ".", ",", -1), port1, port2,
+			)
+		},
+		attrs: []Attribute{
+			needsLogin,
+		},
+	},
+	"PORT": {
+		exec: func(w *Worker, arg string) (int, string) {
+			addrPort := strings.Split(arg, ",")
+			if len(addrPort) != 6 {
+				return 501, "Illegal PORT command"
+			}
 
-func (s *Session) dele(arg string) (int, string) {
-	if arg == "" {
-		return 501, "DELE command requires a parameter"
-	}
+			addr := strings.Join(addrPort[:4], ".")
+			port1, portErr1 := strconv.Atoi(addrPort[4])
+			port2, portErr2 := strconv.Atoi(addrPort[5])
+			if portErr1 != nil || portErr2 != nil {
+				return 501, "Illegal PORT command"
+			}
+			port := port1*0x100 + port2
+			w.dataPort.addr = fmt.Sprintf("%s:%d", addr, port)
 
-	path := s.JoinPath(arg)
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return 550, fmt.Sprintf("%s: No such file or directory", arg)
-	}
-	if fileInfo.IsDir() {
-		return 550, fmt.Sprintf("%s: Is a directory", arg)
-	}
+			return 200, "PORT command successful"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"PWD": {
+		exec: func(w *Worker, arg string) (int, string) {
+			return 257, fmt.Sprintf("\"/%s\" is the current directory", w.workDir)
+		},
+		attrs: []Attribute{
+			needsLogin,
+		},
+	},
+	"QUIT": {
+		exec: func(w *Worker, arg string) (int, string) {
+			return 221, "Goodbye"
+		},
+		attrs: []Attribute{},
+	},
+	"RETR": {
+		exec: func(w *Worker, arg string) (int, string) {
+			dataConn, err := w.dataPort.connect()
+			if err != nil {
+				return 425, err.Error()
+			}
+			defer dataConn.Close()
 
-	if err := os.Remove(path); err != nil {
-		return 550, fmt.Sprintf("%s: Failed to delete a file", arg)
-	}
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Not a regular file", arg)
+			}
 
-	return 250, "DELE command successful"
-}
+			fileData, err := ioutil.ReadFile(path)
+			if err != nil {
+				return 500, "Failed to read file"
+			}
 
-func (s *Session) list(arg string) (int, string) {
-	if arg != "" {
-		return 501, "Invalid number of arguments"
-	}
+			switch w.transferType {
+			case _BINARY:
+				err = dataConn.sendAll(fileData)
+			case _ASCII:
+				err = dataConn.sendAllAsAscii(fileData)
+			default:
+				err = fmt.Errorf("Invalid transfer type")
+			}
+			if err != nil {
+				return 426, fmt.Sprintf("%v: Failed to transfer %s", err, w.transferType)
+			}
+			return 226, "Transfer complete"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+			useDataPort,
+		},
+	},
+	"RMD": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if !isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Not a directory", arg)
+			}
+			if err := os.Remove(path); err != nil {
+				return 550, fmt.Sprintf("%s: Failed to delete a directory", arg)
+			}
+			return 250, "RMD command successful"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"RNFR": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			w.renameFrom = path
+			return 350, "File or directory exists, ready for destination name"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"RNTO": {
+		exec: func(w *Worker, arg string) (int, string) {
+			path := w.joinPath(arg)
+			if !existsPath(filepath.Dir(path)) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Is a directory", arg)
+			}
+			if err := os.Rename(w.renameFrom, path); err != nil {
+				return 550, fmt.Sprintf("%s: Failed to rename a file", arg)
+			}
+			w.renameFrom = ""
+			return 250, "Rename successful"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"SIZE": {
+		exec: func(w *Worker, arg string) (int, string) {
+			if w.transferType == _ASCII {
+				return 550, "SIZE not allowed in ASCII mode"
+			}
+			path := w.joinPath(arg)
+			if !existsPath(path) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Is a directory", arg)
+			}
+			fileInfo, _ := os.Stat(path)
+			return 213, fmt.Sprintf("%d", fileInfo.Size())
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"STOR": {
+		exec: func(w *Worker, arg string) (int, string) {
+			dataConn, err := w.dataPort.connect()
+			if err != nil {
+				return 425, err.Error()
+			}
+			defer dataConn.Close()
 
-	path := s.JoinPath(arg)
-	lsOut, err := exec.Command("ls", "-la", path).Output()
-	if err != nil {
-		return 500, "Failed to execute the list command"
-	}
+			path := w.joinPath(arg)
+			if !existsPath(filepath.Dir(path)) {
+				return 550, fmt.Sprintf("%s: No such file or directory", arg)
+			}
+			if isDirectory(path) {
+				return 550, fmt.Sprintf("%s: Not a regular file", arg)
+			}
 
-	s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.transferType))
-	dataConn, err := s.dataPort.Connect()
-	if err != nil {
-		return 425, fmt.Sprintf("%v", err)
-	}
-	defer dataConn.Close()
+			var buf []byte
+			switch w.transferType {
+			case _BINARY:
+				buf, err = dataConn.readAll()
+			case _ASCII:
+				buf, err = dataConn.readAllAsAscii()
+			default:
+				buf, err = nil, fmt.Errorf("Invalid transfer type")
+			}
+			if err != nil {
+				return 426, fmt.Sprintf("%v: Failed to transfer %s", err, w.transferType)
+			}
 
-	switch s.transferType {
-	case BINARY:
-		err = dataConn.SendAll(lsOut)
-	case ASCII:
-		err = dataConn.SendAllAsAscii(lsOut)
-	default:
-		err = fmt.Errorf("Invalid transfer type")
-	}
-	if err != nil {
-		return 426, fmt.Sprintf("%v: Failed to transfer %s", err, s.transferType)
-	}
-
-	return 226, "Transfer complete"
-}
-
-func (s *Session) mkd(arg string) (int, string) {
-	if arg == "" {
-		return 501, "MKD command requires a parameter"
-	}
-
-	path := s.JoinPath(arg)
-	_, err := os.Stat(filepath.Dir(path))
-	if os.IsNotExist(err) {
-		return 550, fmt.Sprintf("%s: No such file or directory", arg)
-	}
-
-	fileInfo, err := os.Stat(path)
-	if err == nil && !fileInfo.IsDir() {
-		return 550, fmt.Sprintf("%s: Not a directory", arg)
-	}
-
-	if err := os.Mkdir(path, 0755); err != nil {
-		return 550, fmt.Sprintf("%s: Failed to make a directory", arg)
-	}
-
-	return 257, fmt.Sprintf("\"%s\" - Directory successfully created", arg)
-}
-
-func (s *Session) mode(arg string) (int, string) {
-	if arg == "" {
-		return 501, "MODE command requires a parameter"
-	}
-	mode := strings.ToUpper(arg)
-	switch mode {
-	case "S":
-		return 200, "Mode set to S"
-	case "B", "C":
-		return 504, fmt.Sprintf("'MODE %s' unsupported transfer mode", mode)
-	default:
-		return 501, fmt.Sprintf("'MODE %s' unrecognized transfer mode", mode)
-	}
-}
-
-func (s *Session) noop(arg string) (int, string) {
-	return 200, "NOOP command successful"
-}
-
-func (s *Session) pass(arg string) (int, string) {
-	if s.username == "" {
-		return 503, "Login with USER first"
-	}
-	if !auth(s.username, arg) {
-		s.username = ""
-		return 530, "Login incorrect"
-	}
-
-	s.loggedIn = true
-	return 230, fmt.Sprintf("User %v logged in", s.username)
-}
-
-func (s *Session) pasv(arg string) (int, string) {
-	if arg != "" {
-		return 501, "Invalid number of arguments"
-	}
-
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 500, "Cannot listen to port"
-	}
-	s.dataPort.listener = listener
-
-	tcpAddr, _ := listener.Addr().(*net.TCPAddr)
-	addr, port := tcpAddr.IP.String(), tcpAddr.Port
-	port1, port2 := port/0x100, port%0x100
-
-	s.dataPort.pasvMode = true
-	return 227, fmt.Sprintf(
-		"Entering Passive Mode (%s,%d,%d)",
-		strings.Replace(addr, ".", ",", -1), port1, port2,
-	)
-}
-
-func (s *Session) port(arg string) (int, string) {
-	if arg == "" {
-		return 501, "PORT command requires a parameter"
-	}
-
-	addrPort := strings.Split(arg, ",")
-	if len(addrPort) != 6 {
-		return 501, "Illegal PORT command"
-	}
-
-	addr := strings.Join(addrPort[:4], ".")
-	port1, portErr1 := strconv.Atoi(addrPort[4])
-	port2, portErr2 := strconv.Atoi(addrPort[5])
-	if portErr1 != nil || portErr2 != nil {
-		return 501, "Illegal PORT command"
-	}
-	port := port1*0x100 + port2
-	s.dataPort.addr = fmt.Sprintf("%s:%d", addr, port)
-
-	return 200, "PORT command successful"
-}
-
-func (s *Session) pwd(arg string) (int, string) {
-	return 257, fmt.Sprintf("\"/%s\" is the current directory", s.WorkDir)
-}
-
-func (s *Session) quit(arg string) (int, string) {
-	return 221, "Goodbye"
-}
-
-func (s *Session) retr(arg string) (int, string) {
-	if arg == "" {
-		return 501, "RETR command requires a parameter"
-	}
-
-	path := s.JoinPath(arg)
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return 550, fmt.Sprintf("%s: No such file or directory", arg)
-	}
-	if fileInfo.IsDir() {
-		return 550, fmt.Sprintf("%s: Not a regular file", arg)
-	}
-
-	fileData, err := ioutil.ReadFile(path)
-	if err != nil {
-		return 500, "Failed to read file"
-	}
-
-	s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.transferType))
-	dataConn, err := s.dataPort.Connect()
-	if err != nil {
-		return 425, fmt.Sprintf("%v", err)
-	}
-	defer dataConn.Close()
-
-	switch s.transferType {
-	case BINARY:
-		err = dataConn.SendAll(fileData)
-	case ASCII:
-		err = dataConn.SendAllAsAscii(fileData)
-	default:
-		err = fmt.Errorf("Invalid transfer type")
-	}
-	if err != nil {
-		return 426, fmt.Sprintf("%v: Failed to transfer %s", err, s.transferType)
-	}
-	return 226, "Transfer complete"
-}
-
-func (s *Session) rmd(arg string) (int, string) {
-	if arg == "" {
-		return 501, "RMD command requires a parameter"
-	}
-
-	path := s.JoinPath(arg)
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return 550, fmt.Sprintf("%s: No such file or directory", arg)
-	}
-	if !fileInfo.IsDir() {
-		return 550, fmt.Sprintf("%s: Not a directory", arg)
-	}
-
-	if err := os.Remove(path); err != nil {
-		return 550, fmt.Sprintf("%s: Failed to delete a file", arg)
-	}
-
-	return 250, "RMD command successful"
-}
-
-func (s *Session) stor(arg string) (int, string) {
-	if arg == "" {
-		return 501, "STOR command requires a parameter"
-	}
-
-	path := s.JoinPath(arg)
-	_, err := os.Stat(filepath.Dir(path))
-	if os.IsNotExist(err) {
-		return 550, fmt.Sprintf("%s: No such file or directory", arg)
-	}
-
-	fileInfo, err := os.Stat(path)
-	if err == nil && fileInfo.IsDir() {
-		return 550, fmt.Sprintf("%s: Not a regular file", arg)
-	}
-
-	s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.transferType))
-	dataConn, err := s.dataPort.Connect()
-	if err != nil {
-		return 425, fmt.Sprintf("%v", err)
-	}
-	defer dataConn.Close()
-
-	var buf []byte
-	switch s.transferType {
-	case BINARY:
-		buf, err = dataConn.ReadAll()
-	case ASCII:
-		buf, err = dataConn.ReadAllAsAscii()
-	default:
-		buf, err = nil, fmt.Errorf("Invalid transfer type")
-	}
-	if err != nil {
-		return 426, fmt.Sprintf("%v: Failed to transfer %s", err, s.transferType)
-	}
-
-	err = ioutil.WriteFile(path, buf, 0644)
-	if err != nil {
-		return 500, "Failed to write a file"
-	}
-	return 226, "Transfer complete"
-}
-
-func (s *Session) stru(arg string) (int, string) {
-	if arg == "" {
-		return 501, "STRU command requires a parameter"
-	}
-	mode := strings.ToUpper(arg)
-	switch mode {
-	case "F":
-		return 200, "Structure set to F"
-	case "R", "P":
-		return 504, fmt.Sprintf("'MODE %s' unsupported structure type", mode)
-	default:
-		return 501, fmt.Sprintf("'MODE %s' unrecognized structure type", mode)
-	}
-}
-
-func (s *Session) type_(arg string) (int, string) {
-	if arg == "" {
-		return 501, "TYPE command requires a parameter"
-	}
-
-	mode := strings.ToUpper(arg)
-	switch mode {
-	case "A":
-		s.transferType = ASCII
-	case "I":
-		s.transferType = BINARY
-	default:
-		return 500, fmt.Sprintf("'TYPE %s' not understood", mode)
-	}
-
-	return 200, fmt.Sprintf("Type set to %s", mode)
-}
-
-func (s *Session) user(arg string) (int, string) {
-	if arg == "" {
-		return 501, "USER command requires a parameter"
-	}
-
-	s.username = arg
-	return 331, fmt.Sprintf("Password required for %v", s.username)
+			if err := ioutil.WriteFile(path, buf, 0644); err != nil {
+				return 500, "Failed to write a file"
+			}
+			return 226, "Transfer complete"
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+			useDataPort,
+		},
+	},
+	"STRU": {
+		exec: func(w *Worker, arg string) (int, string) {
+			mode := strings.ToUpper(arg)
+			switch mode {
+			case "F":
+				return 200, "Structure set to F"
+			case "R", "P":
+				return 504, fmt.Sprintf("'MODE %s' unsupported structure type", mode)
+			default:
+				return 501, fmt.Sprintf("'MODE %s' unrecognized structure type", mode)
+			}
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"TYPE": {
+		exec: func(w *Worker, arg string) (int, string) {
+			mode := strings.ToUpper(arg)
+			switch mode {
+			case "A":
+				w.transferType = _ASCII
+			case "I":
+				w.transferType = _BINARY
+			default:
+				return 500, fmt.Sprintf("'TYPE %s' not understood", mode)
+			}
+			return 200, fmt.Sprintf("Type set to %s", mode)
+		},
+		attrs: []Attribute{
+			needsLogin,
+			needsArg,
+		},
+	},
+	"USER": {
+		exec: func(w *Worker, arg string) (int, string) {
+			w.username = arg
+			return 331, fmt.Sprintf("Password required for %v", w.username)
+		},
+		attrs: []Attribute{
+			mustNotLogin,
+			needsArg,
+		},
+	},
 }

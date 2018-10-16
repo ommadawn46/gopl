@@ -11,97 +11,184 @@ import (
 	"strings"
 )
 
-func (s *Session) execCommand(cmd string, args []string) {
+func (s *Session) execCommand(cmd string, arg string) (int, string) {
 	if !s.loggedIn {
-		if cmd != "USER" && cmd != "PASS" && cmd != "NOOP" && cmd != "QUIT" {
-			s.conn.Sendline("530 Please login with USER and PASS")
-			return
+		if cmd != "NOOP" && cmd != "PASS" && cmd != "QUIT" && cmd != "USER" {
+			return 530, "Please login with USER and PASS"
 		}
 	}
 	switch cmd {
-	case "USER":
-		s.user(args)
-	case "PASS":
-		s.pass(args)
-	case "NOOP":
-		s.noop(args)
-	case "QUIT":
-		s.quit(args)
-	case "PASV":
-		s.pasv(args)
-	case "PORT":
-		s.port(args)
-	case "TYPE":
-		s.type_(args)
-	case "PWD":
-		s.pwd(args)
 	case "CWD":
-		s.cwd(args)
-	case "MKD":
-		s.mkd(args)
-	case "LIST":
-		s.list(args)
-	case "RETR":
-		s.retr(args)
-	case "STOR":
-		s.stor(args)
+		return s.cwd(arg)
 	case "DELE":
-		s.dele(args)
-	case "RMD":
-		s.rmd(args)
+		return s.dele(arg)
+	case "LIST":
+		return s.list(arg)
+	case "MKD":
+		return s.mkd(arg)
 	case "MODE":
-		s.mode(args)
+		return s.mode(arg)
+	case "NOOP":
+		return s.noop(arg)
+	case "PASS":
+		return s.pass(arg)
+	case "PASV":
+		return s.pasv(arg)
+	case "PORT":
+		return s.port(arg)
+	case "PWD":
+		return s.pwd(arg)
+	case "QUIT":
+		return s.quit(arg)
+	case "RETR":
+		return s.retr(arg)
+	case "RMD":
+		return s.rmd(arg)
+	case "STOR":
+		return s.stor(arg)
 	case "STRU":
-		s.stru(args)
+		return s.stru(arg)
+	case "TYPE":
+		return s.type_(arg)
+	case "USER":
+		return s.user(arg)
 	default:
-		s.conn.Sendline("500 Unknown command")
+		return 500, "Unknown command"
 	}
 }
 
-func (s *Session) user(args []string) {
-	if len(args) < 1 {
-		s.conn.Sendline("500 USER: command requires a parameter")
-		return
+func (s *Session) cwd(arg string) (int, string) {
+	if arg == "" {
+		return 501, "CWD command requires a parameter"
 	}
 
-	s.username = args[0]
-	s.conn.Sendline(fmt.Sprintf("331 Password required for %v", s.username))
+	path := s.JoinPath(arg)
+	fileInfo, err := os.Stat(path)
+	if err != nil || !fileInfo.IsDir() {
+		return 550, fmt.Sprintf("%s: No such file or directory", arg)
+	}
+	s.WorkDir = strings.TrimLeft(path[len(s.RootDir):], "/\\")
+
+	return 250, "CWD command successful"
 }
 
-func (s *Session) pass(args []string) {
+func (s *Session) dele(arg string) (int, string) {
+	if arg == "" {
+		return 501, "DELE command requires a parameter"
+	}
+
+	path := s.JoinPath(arg)
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return 550, fmt.Sprintf("%s: No such file or directory", arg)
+	}
+	if fileInfo.IsDir() {
+		return 550, fmt.Sprintf("%s: Is a directory", arg)
+	}
+
+	if err := os.Remove(path); err != nil {
+		return 550, fmt.Sprintf("%s: Failed to delete a file", arg)
+	}
+
+	return 250, "DELE command successful"
+}
+
+func (s *Session) list(arg string) (int, string) {
+	if arg != "" {
+		return 501, "Invalid number of arguments"
+	}
+
+	path := s.JoinPath(arg)
+	lsOut, err := exec.Command("ls", "-la", path).Output()
+	if err != nil {
+		return 500, "Failed to execute the list command"
+	}
+
+	s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.transferType))
+	dataConn, err := s.dataPort.Connect()
+	if err != nil {
+		return 425, fmt.Sprintf("%v", err)
+	}
+	defer dataConn.Close()
+
+	switch s.transferType {
+	case BINARY:
+		err = dataConn.SendAll(lsOut)
+	case ASCII:
+		err = dataConn.SendAllAsAscii(lsOut)
+	default:
+		err = fmt.Errorf("Invalid transfer type")
+	}
+	if err != nil {
+		return 426, fmt.Sprintf("%v: Failed to transfer %s", err, s.transferType)
+	}
+
+	return 226, "Transfer complete"
+}
+
+func (s *Session) mkd(arg string) (int, string) {
+	if arg == "" {
+		return 501, "MKD command requires a parameter"
+	}
+
+	path := s.JoinPath(arg)
+	_, err := os.Stat(filepath.Dir(path))
+	if os.IsNotExist(err) {
+		return 550, fmt.Sprintf("%s: No such file or directory", arg)
+	}
+
+	fileInfo, err := os.Stat(path)
+	if err == nil && !fileInfo.IsDir() {
+		return 550, fmt.Sprintf("%s: Not a directory", arg)
+	}
+
+	if err := os.Mkdir(path, 0755); err != nil {
+		return 550, fmt.Sprintf("%s: Failed to make a directory", arg)
+	}
+
+	return 257, fmt.Sprintf("\"%s\" - Directory successfully created", arg)
+}
+
+func (s *Session) mode(arg string) (int, string) {
+	if arg == "" {
+		return 501, "MODE command requires a parameter"
+	}
+	mode := strings.ToUpper(arg)
+	switch mode {
+	case "S":
+		return 200, "Mode set to S"
+	case "B", "C":
+		return 504, fmt.Sprintf("'MODE %s' unsupported transfer mode", mode)
+	default:
+		return 501, fmt.Sprintf("'MODE %s' unrecognized transfer mode", mode)
+	}
+}
+
+func (s *Session) noop(arg string) (int, string) {
+	return 200, "NOOP command successful"
+}
+
+func (s *Session) pass(arg string) (int, string) {
 	if s.username == "" {
-		s.conn.Sendline("503 Login with USER first")
-		return
+		return 503, "Login with USER first"
 	}
-	if len(args) < 1 || s.username != _TESTUSER || args[0] != _TESTPASS {
+	if !auth(s.username, arg) {
 		s.username = ""
-		s.conn.Sendline("530 Login incorrect")
-		return
+		return 530, "Login incorrect"
 	}
 
 	s.loggedIn = true
-	s.conn.Sendline(fmt.Sprintf("230 User %v logged in", s.username))
+	return 230, fmt.Sprintf("User %v logged in", s.username)
 }
 
-func (s *Session) noop(args []string) {
-	s.conn.Sendline("200 NOOP command successful")
-}
-
-func (s *Session) quit(args []string) {
-	s.conn.Sendline("221 Goodbye")
-	s.conn.Close()
-}
-
-func (s *Session) pasv(args []string) {
-	if len(args) != 0 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
+func (s *Session) pasv(arg string) (int, string) {
+	if arg != "" {
+		return 501, "Invalid number of arguments"
 	}
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		s.conn.Sendline("500 Cannot listen to port")
-		return
+		return 500, "Cannot listen to port"
 	}
 	s.dataPort.listener = listener
 
@@ -110,268 +197,184 @@ func (s *Session) pasv(args []string) {
 	port1, port2 := port/0x100, port%0x100
 
 	s.dataPort.pasvMode = true
-	s.conn.Sendline(fmt.Sprintf(
-		"227 Entering Passive Mode (%s,%d,%d)",
+	return 227, fmt.Sprintf(
+		"Entering Passive Mode (%s,%d,%d)",
 		strings.Replace(addr, ".", ",", -1), port1, port2,
-	))
+	)
 }
 
-func (s *Session) port(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
+func (s *Session) port(arg string) (int, string) {
+	if arg == "" {
+		return 501, "PORT command requires a parameter"
 	}
 
-	addrPort := strings.Split(args[0], ",")
+	addrPort := strings.Split(arg, ",")
 	if len(addrPort) != 6 {
-		s.conn.Sendline("501 Illegal PORT command")
-		return
+		return 501, "Illegal PORT command"
 	}
 
 	addr := strings.Join(addrPort[:4], ".")
 	port1, portErr1 := strconv.Atoi(addrPort[4])
 	port2, portErr2 := strconv.Atoi(addrPort[5])
 	if portErr1 != nil || portErr2 != nil {
-		s.conn.Sendline("501 Illegal PORT command")
-		return
+		return 501, "Illegal PORT command"
 	}
 	port := port1*0x100 + port2
 	s.dataPort.addr = fmt.Sprintf("%s:%d", addr, port)
 
-	s.conn.Sendline("200 PORT command successful")
+	return 200, "PORT command successful"
 }
 
-func (s *Session) type_(args []string) {
-	if len(args) == 0 {
-		s.conn.Sendline("500 TYPE: command requires a parameter")
-		return
-	}
-
-	mode := strings.ToUpper(args[0])
-	switch mode {
-	case "A":
-		s.binaryMode = false
-	case "I":
-		s.binaryMode = true
-	default:
-		s.conn.Sendline(fmt.Sprintf("500 'TYPE %s' not understood", mode))
-		return
-	}
-
-	s.conn.Sendline(fmt.Sprintf("200 Type set to %s", mode))
+func (s *Session) pwd(arg string) (int, string) {
+	return 257, fmt.Sprintf("\"/%s\" is the current directory", s.WorkDir)
 }
 
-func (s *Session) pwd(args []string) {
-	s.conn.Sendline(fmt.Sprintf("257 \"/%s\" is the current directory", s.WorkDir))
+func (s *Session) quit(arg string) (int, string) {
+	return 221, "Goodbye"
 }
 
-func (s *Session) cwd(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
+func (s *Session) retr(arg string) (int, string) {
+	if arg == "" {
+		return 501, "RETR command requires a parameter"
 	}
 
-	path := s.JoinPath(args[0])
-	fileInfo, err := os.Stat(path)
-	if err != nil || !fileInfo.IsDir() {
-		s.conn.Sendline(fmt.Sprintf("550 %s: No such file or directory", args[0]))
-		return
-	}
-	s.WorkDir = strings.TrimLeft(path[len(s.RootDir):], "/\\")
-
-	s.conn.Sendline("250 CWD command successful")
-}
-
-func (s *Session) mkd(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
-	}
-
-	path := s.JoinPath(args[0])
-	_, err := os.Stat(filepath.Dir(path))
-	if os.IsNotExist(err) {
-		s.conn.Sendline(fmt.Sprintf("550 %s: No such file or directory", args[0]))
-		return
-	}
-
-	fileInfo, err := os.Stat(path)
-	if err == nil && !fileInfo.IsDir() {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Not a directory", args[0]))
-		return
-	}
-
-	if err := os.Mkdir(path, 0755); err != nil {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Failed to make a directory", args[0]))
-		return
-	}
-
-	s.conn.Sendline(fmt.Sprintf("257 \"%s\" - Directory successfully created", args[0]))
-}
-
-func (s *Session) list(args []string) {
-	if len(args) > 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
-	}
-
-	var path string
-	if len(args) == 0 {
-		path = s.JoinPath("")
-	} else {
-		path = s.JoinPath(args[0])
-	}
-
-	lsOut, err := exec.Command("ls", "-la", path).Output()
-	if err != nil {
-		s.conn.Sendline("500 Failed to execute the list command")
-		return
-	}
-
-	err = s.sendToDataPort(lsOut)
-	if err != nil {
-		s.conn.Sendline(err.Error())
-	}
-}
-
-func (s *Session) retr(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
-	}
-
-	path := s.JoinPath(args[0])
+	path := s.JoinPath(arg)
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		s.conn.Sendline(fmt.Sprintf("550 %s: No such file or directory", args[0]))
-		return
+		return 550, fmt.Sprintf("%s: No such file or directory", arg)
 	}
 	if fileInfo.IsDir() {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Not a regular file", args[0]))
-		return
+		return 550, fmt.Sprintf("%s: Not a regular file", arg)
 	}
 
 	fileData, err := ioutil.ReadFile(path)
 	if err != nil {
-		s.conn.Sendline("500 Failed to read file")
-		return
+		return 500, "Failed to read file"
 	}
 
-	err = s.sendToDataPort(fileData)
+	s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.transferType))
+	dataConn, err := s.dataPort.Connect()
 	if err != nil {
-		s.conn.Sendline(err.Error())
+		return 425, fmt.Sprintf("%v", err)
 	}
+	defer dataConn.Close()
+
+	switch s.transferType {
+	case BINARY:
+		err = dataConn.SendAll(fileData)
+	case ASCII:
+		err = dataConn.SendAllAsAscii(fileData)
+	default:
+		err = fmt.Errorf("Invalid transfer type")
+	}
+	if err != nil {
+		return 426, fmt.Sprintf("%v: Failed to transfer %s", err, s.transferType)
+	}
+	return 226, "Transfer complete"
 }
 
-func (s *Session) stor(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
+func (s *Session) rmd(arg string) (int, string) {
+	if arg == "" {
+		return 501, "RMD command requires a parameter"
 	}
 
-	path := s.JoinPath(args[0])
+	path := s.JoinPath(arg)
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return 550, fmt.Sprintf("%s: No such file or directory", arg)
+	}
+	if !fileInfo.IsDir() {
+		return 550, fmt.Sprintf("%s: Not a directory", arg)
+	}
+
+	if err := os.Remove(path); err != nil {
+		return 550, fmt.Sprintf("%s: Failed to delete a file", arg)
+	}
+
+	return 250, "RMD command successful"
+}
+
+func (s *Session) stor(arg string) (int, string) {
+	if arg == "" {
+		return 501, "STOR command requires a parameter"
+	}
+
+	path := s.JoinPath(arg)
 	_, err := os.Stat(filepath.Dir(path))
 	if os.IsNotExist(err) {
-		s.conn.Sendline(fmt.Sprintf("550 %s: No such file or directory", args[0]))
-		return
+		return 550, fmt.Sprintf("%s: No such file or directory", arg)
 	}
 
 	fileInfo, err := os.Stat(path)
 	if err == nil && fileInfo.IsDir() {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Not a regular file", args[0]))
-		return
+		return 550, fmt.Sprintf("%s: Not a regular file", arg)
 	}
 
-	recvData, err := s.recvFromDataPort()
+	s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.transferType))
+	dataConn, err := s.dataPort.Connect()
 	if err != nil {
-		s.conn.Sendline(err.Error())
+		return 425, fmt.Sprintf("%v", err)
 	}
+	defer dataConn.Close()
 
-	err = ioutil.WriteFile(path, recvData, 0644)
-	if err != nil {
-		s.conn.Sendline("500 Failed to execute the command")
-		return
-	}
-}
-
-func (s *Session) dele(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
-	}
-
-	path := s.JoinPath(args[0])
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		s.conn.Sendline(fmt.Sprintf("550 %s: No such file or directory", args[0]))
-		return
-	}
-	if fileInfo.IsDir() {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Is a directory", args[0]))
-		return
-	}
-
-	if err := os.Remove(path); err != nil {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Failed to delete a file", args[0]))
-		return
-	}
-
-	s.conn.Sendline("250 DELE command successful")
-}
-
-func (s *Session) rmd(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
-	}
-
-	path := s.JoinPath(args[0])
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		s.conn.Sendline(fmt.Sprintf("550 %s: No such file or directory", args[0]))
-		return
-	}
-	if !fileInfo.IsDir() {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Not a directory", args[0]))
-		return
-	}
-
-	if err := os.Remove(path); err != nil {
-		s.conn.Sendline(fmt.Sprintf("550 %s: Failed to delete a file", args[0]))
-		return
-	}
-
-	s.conn.Sendline("250 RMD command successful")
-}
-
-func (s *Session) mode(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
-	}
-	mode := strings.ToUpper(args[0])
-	switch mode {
-	case "S":
-		s.conn.Sendline("200 Mode set to S")
-	case "B", "C":
-		s.conn.Sendline(fmt.Sprintf("504 'MODE %s' unsupported transfer mode", mode))
+	var buf []byte
+	switch s.transferType {
+	case BINARY:
+		buf, err = dataConn.ReadAll()
+	case ASCII:
+		buf, err = dataConn.ReadAllAsAscii()
 	default:
-		s.conn.Sendline(fmt.Sprintf("501 'MODE %s' unrecognized transfer mode", mode))
+		buf, err = nil, fmt.Errorf("Invalid transfer type")
 	}
+	if err != nil {
+		return 426, fmt.Sprintf("%v: Failed to transfer %s", err, s.transferType)
+	}
+
+	err = ioutil.WriteFile(path, buf, 0644)
+	if err != nil {
+		return 500, "Failed to write a file"
+	}
+	return 226, "Transfer complete"
 }
 
-func (s *Session) stru(args []string) {
-	if len(args) != 1 {
-		s.conn.Sendline("501 Invalid number of arguments")
-		return
+func (s *Session) stru(arg string) (int, string) {
+	if arg == "" {
+		return 501, "STRU command requires a parameter"
 	}
-	mode := strings.ToUpper(args[0])
+	mode := strings.ToUpper(arg)
 	switch mode {
 	case "F":
-		s.conn.Sendline("200 Structure set to F")
+		return 200, "Structure set to F"
 	case "R", "P":
-		s.conn.Sendline(fmt.Sprintf("504 'MODE %s' unsupported structure type", mode))
+		return 504, fmt.Sprintf("'MODE %s' unsupported structure type", mode)
 	default:
-		s.conn.Sendline(fmt.Sprintf("501 'MODE %s' unrecognized structure type", mode))
+		return 501, fmt.Sprintf("'MODE %s' unrecognized structure type", mode)
 	}
+}
+
+func (s *Session) type_(arg string) (int, string) {
+	if arg == "" {
+		return 501, "TYPE command requires a parameter"
+	}
+
+	mode := strings.ToUpper(arg)
+	switch mode {
+	case "A":
+		s.transferType = ASCII
+	case "I":
+		s.transferType = BINARY
+	default:
+		return 500, fmt.Sprintf("'TYPE %s' not understood", mode)
+	}
+
+	return 200, fmt.Sprintf("Type set to %s", mode)
+}
+
+func (s *Session) user(arg string) (int, string) {
+	if arg == "" {
+		return 501, "USER command requires a parameter"
+	}
+
+	s.username = arg
+	return 331, fmt.Sprintf("Password required for %v", s.username)
 }

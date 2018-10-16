@@ -19,21 +19,21 @@ cp ./img/image1.png ./server/serverfile.png
 cp ./img/image2.png ./client/clientfile.png
 
 go run main.go -port 22221 -root ./server &
-sleep 1.5s
+sleep 3s
 
 cd ./client
 
 ## PASSIVE MODE
 cat <<EOF | ftp -n -p &
 open 127.0.0.1 22221
-user test qwerty
+user test1 qwerty
 
 ascii
 get serverfile.txt downloaded1.txt
 put clientfile.txt uploaded1.txt
 
 binary
-get serverfile.png donwloded1.png
+get serverfile.png downloaded1.png
 put clientfile.png uploaded1.png
 bye
 EOF
@@ -41,14 +41,14 @@ EOF
 ## ACTIVE MODE
 cat <<EOF | ftp -n &
 open 127.0.0.1 22221
-user test qwerty
+user test2 abcd1234
 
 ascii
 get serverfile.txt downloaded2.txt
 put clientfile.txt uploaded2.txt
 
 binary
-get serverfile.png donwloded2.png
+get serverfile.png downloaded2.png
 put clientfile.png uploaded2.png
 bye
 EOF
@@ -56,7 +56,7 @@ EOF
 ## DIRECTORY OPERATIONS
 cat <<EOF | ftp -n -p &
 open 127.0.0.1 22221
-user test qwerty
+user test3 p455w0rd
 
 mkdir dir1
 mkdir dir1/dir2
@@ -74,7 +74,7 @@ rmdir dir1
 bye
 EOF
 
-sleep 1.5s
+sleep 2s
 cd ..
 
 echo -e "\n$ ls -la ./server"

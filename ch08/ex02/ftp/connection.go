@@ -2,6 +2,7 @@ package ftp
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -19,6 +20,10 @@ func (c *Connection) Readline() (string, error) {
 
 func (c *Connection) Sendline(str string) (int, error) {
 	return io.WriteString(c, str+"\n")
+}
+
+func (c *Connection) SendResponce(code int, message string) (int, error) {
+	return c.Sendline(fmt.Sprintf("%d %s", code, message))
 }
 
 func (c *Connection) ReadAll() ([]byte, error) {

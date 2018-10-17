@@ -23,10 +23,41 @@ sleep 3s
 
 cd ./client
 
+## HELP MESSAGES
+cat <<EOF | ftp -n &
+open 127.0.0.1 22221
+user test1 qwerty
+
+rhelp
+rhelp CWD
+rhelp DELE
+rhelp HELP
+rhelp LIST
+rhelp MDTM
+rhelp MKD
+rhelp MODE
+rhelp NLST
+rhelp NOOP
+rhelp PASS
+rhelp PASV
+rhelp PORT
+rhelp PWD
+rhelp QUIT
+rhelp RETR
+rhelp RMD
+rhelp RNFR
+rhelp RNTO
+rhelp SIZE
+rhelp STOR
+rhelp STRU
+rhelp TYPE
+rhelp USER
+EOF
+
 ## PASSIVE MODE
 cat <<EOF | ftp -n -p &
 open 127.0.0.1 22221
-user test1 qwerty
+user test2 abcd1234
 
 ascii
 get serverfile.txt downloaded1.txt
@@ -47,7 +78,7 @@ EOF
 ## ACTIVE MODE
 cat <<EOF | ftp -n &
 open 127.0.0.1 22221
-user test2 abcd1234
+user test3 p455w0rd
 
 ascii
 get serverfile.txt downloaded2.txt
@@ -68,7 +99,7 @@ EOF
 ## DIRECTORY OPERATIONS
 cat <<EOF | ftp -n -p &
 open 127.0.0.1 22221
-user test3 p455w0rd
+user test4 letmein
 
 mkdir dir1
 mkdir dir1/dir2

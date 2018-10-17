@@ -23,7 +23,13 @@ func (c *Connection) sendline(str string) (int, error) {
 }
 
 func (c *Connection) sendResponce(code int, message string) (int, error) {
-	return c.sendline(fmt.Sprintf("%d %s", code, message))
+	lines := strings.Split(message, "\n")
+	length := len(lines)
+	if length > 1 {
+		lines[0] = fmt.Sprintf("%d-%s", code, lines[0])
+	}
+	lines[length-1] = fmt.Sprintf("%d %s", code, lines[length-1])
+	return c.sendline(strings.Join(lines, "\n"))
 }
 
 func (c *Connection) readAll() ([]byte, error) {

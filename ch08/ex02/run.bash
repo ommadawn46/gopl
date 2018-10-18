@@ -9,19 +9,28 @@ trap "kill 0" EXIT
 ## Install FTP client (MacOS High Sierra or higher)
 # brew install inetutils
 
-rm -rf ./server ./client
-mkdir -p ./server ./client
+rm -rf ./demo/server ./demo/client ./demo/passwd
 
-echo "SERVER FILE" > ./server/serverfile.txt
-echo "CLIENT FILE" > ./client/clientfile.txt
+mkdir -p ./demo/server ./demo/client
+touch ./demo/passwd
 
-cp ./img/image1.png ./server/serverfile.png
-cp ./img/image2.png ./client/clientfile.png
+echo -e "SERVER FILE\nSERVER FILE\nSERVER FILE\nSERVER FILE\nSERVER FILE" > ./demo/server/serverfile.txt
+echo -e "CLIENT FILE\nCLIENT FILE\nCLIENT FILE\nCLIENT FILE\nCLIENT FILE" > ./demo/client/clientfile.txt
 
-go run main.go -port 22221 -root ./server &
+cp ./demo/img/image1.png ./demo/server/serverfile.png
+cp ./demo/img/image2.png ./demo/client/clientfile.png
+
+## Create Users
+go run main.go -passwd ./demo/passwd -adduser -user test1 -pass qwerty
+go run main.go -passwd ./demo/passwd -adduser -user test2 -pass abcd1234
+go run main.go -passwd ./demo/passwd -adduser -user test3 -pass p455w0rd
+go run main.go -passwd ./demo/passwd -adduser -user test4 -pass letmein
+
+## Start FTP Server
+go run main.go -port 22221 -root ./demo/server -passwd ./demo/passwd &
 sleep 3s
 
-cd ./client
+cd ./demo/client
 
 ## HELP MESSAGES
 cat <<EOF | ftp -n &
@@ -122,10 +131,10 @@ bye
 EOF
 
 sleep 2s
-cd ..
+cd ../..
 
-echo -e "\n$ ls -la ./server"
-ls -la ./server
+echo -e "\n$ ls -la ./demo/server"
+ls -la ./demo/server
 
-echo -e "\n$ ls -la ./client"
-ls -la ./client
+echo -e "\n$ ls -la ./demo/client"
+ls -la ./demo/client

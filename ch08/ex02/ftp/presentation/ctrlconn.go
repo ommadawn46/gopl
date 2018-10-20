@@ -4,23 +4,20 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"strings"
 )
 
 type CtrlConn struct {
 	net.Conn
+	scanner *bufio.Scanner
 }
 
 func (c *CtrlConn) RecvCommand() (string, string, error) {
 	recv, err := c.Readline()
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
-	recv = strings.TrimSpace(recv)
-	log.Printf("[%v] %s", c.RemoteAddr(), recv)
-
 	var cmdName, arg string
 	spaceIdx := strings.Index(recv, " ")
 	if spaceIdx != -1 {
@@ -32,7 +29,11 @@ func (c *CtrlConn) RecvCommand() (string, string, error) {
 }
 
 func (c *CtrlConn) Readline() (string, error) {
-	return bufio.NewReader(c).ReadString('\n')
+	if c.scanner.Scan() {
+		return c.scanner.Text(), nil
+	} else {
+		return "", c.scanner.Err()
+	}
 }
 
 func (c *CtrlConn) Sendline(str string) (int, error) {
@@ -50,5 +51,6 @@ func (c *CtrlConn) SendResponce(code int, message string) (int, error) {
 }
 
 func NewCtrlConn(conn net.Conn) *CtrlConn {
-	return &CtrlConn{conn}
+	scanner := bufio.NewScanner(conn)
+	return &CtrlConn{conn, scanner}
 }

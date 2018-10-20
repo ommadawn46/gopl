@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"log"
 
 	app "github.com/ommadawn46/the_go_programming_language-training/ch08/ex02/ftp/application"
 	pre "github.com/ommadawn46/the_go_programming_language-training/ch08/ex02/ftp/presentation"
@@ -16,6 +17,7 @@ func ListenAndServe(addr, rootDir, passwdPath string) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("LISTENING %v", listener.Addr())
 	return Serve(listener.(*net.TCPListener), rootDir, passwdPath)
 }
 
@@ -35,6 +37,7 @@ func Serve(listener *net.TCPListener, rootDir, passwdPath string) error {
 		if err != nil {
 			return err
 		}
+		log.Printf("ACCEPT %v", c.RemoteAddr())
 		conn := pre.NewCtrlConn(c)
 		worker := app.NewWorker(userMgr, &rootDir)
 		session := Session{conn, worker}
@@ -47,14 +50,16 @@ type Session struct {
 	worker *app.Worker
 }
 
-func (s *Session) Run() error {
+func (s *Session) Run() {
 	defer s.conn.Close()
 	s.conn.SendResponce(220, "Ready")
 	for {
 		cmdName, arg, err := s.conn.RecvCommand()
 		if err != nil {
-			return err
+			log.Printf("CLOSE %v", s.conn.RemoteAddr())
+			return
 		}
+		log.Printf("[%v] %s %s", s.conn.RemoteAddr(), cmdName, arg)
 		go func() {
 			code, message := s.Dispatch(cmdName, arg)
 			s.conn.SendResponce(code, message)

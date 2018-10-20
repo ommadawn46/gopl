@@ -12,12 +12,6 @@ import (
 )
 
 func ListenAndServe(addr, rootDir, passwdPath string) error {
-	if !util.ExistsPath(rootDir) {
-		return fmt.Errorf("directory does not exist: %s", rootDir)
-	}
-	if !util.IsDirectory(rootDir) {
-		return fmt.Errorf("not a directory: %s", rootDir)
-	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -26,6 +20,12 @@ func ListenAndServe(addr, rootDir, passwdPath string) error {
 }
 
 func Serve(listener *net.TCPListener, rootDir, passwdPath string) error {
+	if !util.ExistsPath(rootDir) {
+		return fmt.Errorf("directory does not exist: %s", rootDir)
+	}
+	if !util.IsDirectory(rootDir) {
+		return fmt.Errorf("not a directory: %s", rootDir)
+	}
 	userMgr, err := usermanager.NewUserManager(passwdPath)
 	if err != nil {
 		return err

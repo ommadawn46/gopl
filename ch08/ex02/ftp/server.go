@@ -38,7 +38,7 @@ func Serve(listener *net.TCPListener, rootDir, passwdPath string) error {
 			return err
 		}
 		log.Printf("ACCEPT %v", c.RemoteAddr())
-		conn := pre.NewCtrlConn(c)
+		conn := pre.NewCtrlConn(c.(*net.TCPConn))
 		worker := app.NewWorker(userMgr, &rootDir)
 		session := Session{conn, worker}
 		go session.Run()

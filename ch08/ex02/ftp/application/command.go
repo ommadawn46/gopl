@@ -80,6 +80,25 @@ func init() {
 			},
 			syntax: "DELE <SP> <pathname>",
 		},
+		"EPRT": {
+			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
+				return 502, "Command not implemented", nil
+			},
+			attrs:  []Attribute{
+				NeedsLogin,
+				NeedsArg,
+			},
+			syntax: "EPRT <SP> | <net-prt> | <net-addr> | <tcp-port> |",
+		},
+		"EPSV": {
+			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
+				return 502, "Command not implemented", nil
+			},
+			attrs:  []Attribute{
+				NeedsLogin,
+			},
+			syntax: "EPSV",
+		},
 		"HELP": {
 			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
 				if arg == "" {

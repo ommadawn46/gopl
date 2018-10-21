@@ -9,7 +9,7 @@ import (
 )
 
 type CtrlConn struct {
-	net.Conn
+	*net.TCPConn
 	scanner *bufio.Scanner
 }
 
@@ -31,8 +31,11 @@ func (c *CtrlConn) RecvCommand() (string, string, error) {
 func (c *CtrlConn) Readline() (string, error) {
 	if c.scanner.Scan() {
 		return c.scanner.Text(), nil
+	}
+	if err := c.scanner.Err(); err != nil {
+		return "", err
 	} else {
-		return "", c.scanner.Err()
+		return "", io.EOF
 	}
 }
 
@@ -50,7 +53,7 @@ func (c *CtrlConn) SendResponce(code int, message string) (int, error) {
 	return c.Sendline(strings.Join(lines, "\n"))
 }
 
-func NewCtrlConn(conn net.Conn) *CtrlConn {
+func NewCtrlConn(conn *net.TCPConn) *CtrlConn {
 	scanner := bufio.NewScanner(conn)
 	return &CtrlConn{conn, scanner}
 }

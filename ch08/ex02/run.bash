@@ -33,7 +33,7 @@ sleep 3s
 cd ./demo/client
 
 ## HELP MESSAGES
-cat <<EOF | ftp -4 -n &
+cat <<EOF | ftp -n &
 open 127.0.0.1 22221
 user test1 qwerty
 
@@ -65,7 +65,7 @@ bye
 EOF
 
 ## PASSIVE MODE
-cat <<EOF | ftp -4 -n -p &
+cat <<EOF | ftp -n -p &
 open 127.0.0.1 22221
 user test2 abcd1234
 
@@ -86,7 +86,7 @@ bye
 EOF
 
 ## ACTIVE MODE
-cat <<EOF | ftp -4 -n &
+cat <<EOF | ftp -n &
 open 127.0.0.1 22221
 user test3 p455w0rd
 
@@ -107,7 +107,7 @@ bye
 EOF
 
 ## DIRECTORY OPERATIONS
-cat <<EOF | ftp -4 -n -p &
+cat <<EOF | ftp -n -p &
 open 127.0.0.1 22221
 user test4 letmein
 

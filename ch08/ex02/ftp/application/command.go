@@ -82,7 +82,22 @@ func init() {
 		},
 		"EPRT": {
 			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
-				return 502, "Command not implemented", nil
+				addrPort := strings.Split(arg, "|")
+				if len(addrPort) != 5 {
+					return 501, "Illegal EPRT command", nil
+				}
+				protocol, err1 := strconv.Atoi(addrPort[1])
+				addr := addrPort[2]
+				if protocol == 2 {
+					addr = "["+addr+"]"
+				}
+				port, err2 := strconv.Atoi(addrPort[3])
+				if err1 != nil || err2 != nil {
+					return 501, "Illegal EPRT command", nil
+				}
+				w.DataAddr = fmt.Sprintf("%s:%d", addr, port)
+
+				return 200, "EPRT command successful", nil
 			},
 			attrs:  []Attribute{
 				NeedsLogin,
@@ -92,7 +107,20 @@ func init() {
 		},
 		"EPSV": {
 			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
-				return 502, "Command not implemented", nil
+				listener, err := net.Listen("tcp", ":0")
+				if err != nil {
+					return 500, "Cannot listen to port", nil
+				}
+				w.DataListener = listener.(*net.TCPListener)
+
+				tcpAddr, _ := listener.Addr().(*net.TCPAddr)
+				port := tcpAddr.Port
+
+				w.PasvMode = true
+				return 229, fmt.Sprintf(
+					"Entering Extended Passive Mode (|||%d|)",
+					port,
+				), nil
 			},
 			attrs:  []Attribute{
 				NeedsLogin,
@@ -229,7 +257,7 @@ func init() {
 		},
 		"PASV": {
 			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
-				listener, err := net.Listen("tcp", "127.0.0.1:0")
+				listener, err := net.Listen("tcp4", "127.0.0.1:0")
 				if err != nil {
 					return 500, "Cannot listen to port", nil
 				}

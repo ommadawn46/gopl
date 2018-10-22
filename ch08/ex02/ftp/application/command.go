@@ -103,7 +103,7 @@ func init() {
 				NeedsLogin,
 				NeedsArg,
 			},
-			syntax: "EPRT <SP> | <net-prt> | <net-addr> | <tcp-port> |",
+			syntax: "EPRT <SP> <d> <net-prt> <d> <net-addr> <d> <tcp-port> <d>",
 		},
 		"EPSV": {
 			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {

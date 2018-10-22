@@ -40,6 +40,8 @@ user test1 qwerty
 rhelp
 rhelp CWD
 rhelp DELE
+rhelp EPRT
+rhelp EPSV
 rhelp HELP
 rhelp LIST
 rhelp MDTM

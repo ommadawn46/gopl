@@ -94,6 +94,7 @@ func (s *Session) Dispatch(cmdName, arg string) (int, string) {
 		if err != nil {
 			return 425, err.Error()
 		}
+		defer dataConn.Close()
 		if recvData, err = s.RecvData(dataConn); err != nil {
 			return 426, err.Error()
 		}
@@ -108,6 +109,7 @@ func (s *Session) Dispatch(cmdName, arg string) (int, string) {
 		if err != nil {
 			return 425, err.Error()
 		}
+		defer dataConn.Close()
 		if err = s.SendData(dataConn, sendData); err != nil {
 			return 426, err.Error()
 		}

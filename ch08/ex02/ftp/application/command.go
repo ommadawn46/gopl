@@ -21,6 +21,7 @@ const (
 	MustNotLogin                    // ログイン前のみ実行可能
 	RecvDataBefore                  // コマンド実行前にデータを受け取る
 	SendDataAfter                   // コマンド実行後にデータを転送する
+	CloseDataConn                   // データ転送を中断する
 )
 
 type Command struct {
@@ -42,6 +43,16 @@ var COMMANDS map[string]Command
 
 func init() {
 	COMMANDS = map[string]Command{
+		"ABOR": {
+			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
+				return 226, "ABOR command successful", nil
+			},
+			attrs: []Attribute{
+				NeedsLogin,
+				CloseDataConn,
+			},
+			syntax: "ABOR",
+		},
 		"CWD": {
 			exec: func(w *Worker, arg string, _ []byte) (int, string, []byte) {
 				path := w.joinPath(arg)
@@ -89,7 +100,7 @@ func init() {
 				protocol, err1 := strconv.Atoi(addrPort[1])
 				addr := addrPort[2]
 				if protocol == 2 {
-					addr = "["+addr+"]"
+					addr = "[" + addr + "]"
 				}
 				port, err2 := strconv.Atoi(addrPort[3])
 				if err1 != nil || err2 != nil {
@@ -99,7 +110,7 @@ func init() {
 
 				return 200, "EPRT command successful", nil
 			},
-			attrs:  []Attribute{
+			attrs: []Attribute{
 				NeedsLogin,
 				NeedsArg,
 			},
@@ -122,7 +133,7 @@ func init() {
 					port,
 				), nil
 			},
-			attrs:  []Attribute{
+			attrs: []Attribute{
 				NeedsLogin,
 			},
 			syntax: "EPSV",

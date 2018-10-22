@@ -38,6 +38,7 @@ open 127.0.0.1 22221
 user test1 qwerty
 
 rhelp
+rhelp ABOR
 rhelp CWD
 rhelp DELE
 rhelp EPRT

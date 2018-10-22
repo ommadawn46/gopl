@@ -2,9 +2,9 @@ package ftp
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"strings"
-	"log"
 
 	app "github.com/ommadawn46/the_go_programming_language-training/ch08/ex02/ftp/application"
 	pre "github.com/ommadawn46/the_go_programming_language-training/ch08/ex02/ftp/presentation"
@@ -40,31 +40,32 @@ func Serve(listener *net.TCPListener, rootDir, passwdPath string) error {
 		log.Printf("ACCEPT %v", c.RemoteAddr())
 		conn := pre.NewCtrlConn(c.(*net.TCPConn))
 		worker := app.NewWorker(userMgr, &rootDir)
-		session := Session{conn, worker}
+		session := Session{conn, nil, worker}
 		go session.Run()
 	}
 }
 
 type Session struct {
-	conn   *pre.CtrlConn
-	worker *app.Worker
+	ctrlconn *pre.CtrlConn
+	dataconn *pre.DataConn
+	worker   *app.Worker
 }
 
 func (s *Session) Run() {
-	defer s.conn.Close()
-	s.conn.SendResponce(220, "Ready")
+	defer s.ctrlconn.Close()
+	s.ctrlconn.SendResponce(220, "Ready")
 	for {
-		cmdName, arg, err := s.conn.RecvCommand()
+		cmdName, arg, err := s.ctrlconn.RecvCommand()
 		if err != nil {
-			log.Printf("CLOSE %v", s.conn.RemoteAddr())
+			log.Printf("CLOSE %v", s.ctrlconn.RemoteAddr())
 			return
 		}
-		log.Printf("[%v] %s %s", s.conn.RemoteAddr(), cmdName, arg)
+		log.Printf("[%v] %s %s", s.ctrlconn.RemoteAddr(), cmdName, arg)
 		go func() {
 			code, message := s.Dispatch(cmdName, arg)
-			s.conn.SendResponce(code, message)
+			s.ctrlconn.SendResponce(code, message)
 			if code == 221 {
-				s.conn.Close() // QUIT
+				s.ctrlconn.Close() // QUIT
 			}
 		}()
 	}
@@ -84,18 +85,21 @@ func (s *Session) Dispatch(cmdName, arg string) (int, string) {
 	if arg == "" && cmd.HasAttribute(app.NeedsArg) {
 		return 501, "Command requires a parameter"
 	}
+	if s.dataconn != nil && cmd.HasAttribute(app.CloseDataConn) {
+		s.dataconn.Close()
+	}
 	var recvData []byte
 	if cmd.HasAttribute(app.RecvDataBefore) {
 		if err := s.worker.CheckReadyForTransfer(); err != nil {
 			return 503, err.Error()
 		}
-		s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.worker.TransType))
-		dataConn, err := s.NewDataConn()
+		s.ctrlconn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.worker.TransType))
+		err := s.RenewDataConn()
 		if err != nil {
 			return 425, err.Error()
 		}
-		defer dataConn.Close()
-		if recvData, err = s.RecvData(dataConn); err != nil {
+		defer s.dataconn.Close()
+		if recvData, err = s.RecvData(); err != nil {
 			return 426, err.Error()
 		}
 	}
@@ -104,42 +108,44 @@ func (s *Session) Dispatch(cmdName, arg string) (int, string) {
 		if err := s.worker.CheckReadyForTransfer(); err != nil {
 			return 503, err.Error()
 		}
-		s.conn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.worker.TransType))
-		dataConn, err := s.NewDataConn()
+		s.ctrlconn.SendResponce(150, fmt.Sprintf("Opening %s mode data connection", s.worker.TransType))
+		err := s.RenewDataConn()
 		if err != nil {
 			return 425, err.Error()
 		}
-		defer dataConn.Close()
-		if err = s.SendData(dataConn, sendData); err != nil {
+		defer s.dataconn.Close()
+		if err = s.SendData(sendData); err != nil {
 			return 426, err.Error()
 		}
 	}
 	return code, message
 }
 
-func (s *Session) NewDataConn() (*pre.DataConn, error) {
-	var dataconn *pre.DataConn
+func (s *Session) RenewDataConn() error {
+	if s.dataconn != nil {
+		s.dataconn.Close()
+	}
 	var err error
 	if s.worker.PasvMode {
-		dataconn, err = pre.AcceptNewDataConn(s.worker.DataListener)
+		s.dataconn, err = pre.AcceptNewDataConn(s.worker.DataListener)
 		s.worker.PasvMode, s.worker.DataListener = false, nil
 	} else {
-		dataconn, err = pre.DialNewDataConn(s.worker.DataAddr)
+		s.dataconn, err = pre.DialNewDataConn(s.worker.DataAddr)
 		s.worker.DataAddr = ""
 	}
-	return dataconn, err
+	return err
 }
 
-func (s *Session) RecvData(dataConn *pre.DataConn) ([]byte, error) {
-	defer dataConn.Close()
+func (s *Session) RecvData() ([]byte, error) {
+	defer s.dataconn.Close()
 
 	var buf []byte
 	var err error
 	switch s.worker.TransType {
 	case app.BINARY:
-		buf, err = dataConn.ReadAll()
+		buf, err = s.dataconn.ReadAll()
 	case app.ASCII:
-		buf, err = dataConn.ReadAllAsAscii()
+		buf, err = s.dataconn.ReadAllAsAscii()
 	default:
 		buf, err = nil, fmt.Errorf("Invalid transfer type")
 	}
@@ -149,15 +155,15 @@ func (s *Session) RecvData(dataConn *pre.DataConn) ([]byte, error) {
 	return buf, nil
 }
 
-func (s *Session) SendData(dataConn *pre.DataConn, data []byte) error {
-	defer dataConn.Close()
+func (s *Session) SendData(data []byte) error {
+	defer s.dataconn.Close()
 
 	var err error
 	switch s.worker.TransType {
 	case app.BINARY:
-		err = dataConn.SendAll(data)
+		err = s.dataconn.SendAll(data)
 	case app.ASCII:
-		err = dataConn.SendAllAsAscii(data)
+		err = s.dataconn.SendAllAsAscii(data)
 	default:
 		err = fmt.Errorf("Invalid transfer type")
 	}

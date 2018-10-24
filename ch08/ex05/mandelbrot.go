@@ -11,12 +11,12 @@ import (
 
 type ImageParam struct {
 	xmin, ymin, xmax, ymax float64
-	width, height int
+	width, height          int
 }
 
 type Result struct {
 	x, y int
-	c color.Color
+	c    color.Color
 }
 
 func main() {
@@ -30,8 +30,8 @@ func genImageInParallel(p ImageParam, gNum int) *image.RGBA {
 	for g := 0; g < gNum; g++ {
 		go func(g int) {
 			i := g
-			for i < p.width * p.height {
-				px, py := i % p.width, i / p.width
+			for i < p.width*p.height {
+				px, py := i%p.width, i/p.width
 				y := float64(py)/float64(p.height)*(p.ymax-p.ymin) + p.ymin
 				x := float64(px)/float64(p.width)*(p.xmax-p.xmin) + p.xmin
 				z := complex(x, y)
@@ -40,7 +40,7 @@ func genImageInParallel(p ImageParam, gNum int) *image.RGBA {
 			}
 		}(g)
 	}
-	for i := 0; i < p.width * p.height; i++ {
+	for i := 0; i < p.width*p.height; i++ {
 		r := <-results
 		img.Set(r.x, r.y, r.c)
 	}

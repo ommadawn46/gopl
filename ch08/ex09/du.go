@@ -19,11 +19,12 @@ type Process struct {
 }
 
 var vFlag = flag.Bool("v", false, "show verbose progress messages")
+var rootFlag = flag.String("root", "/", "root directory")
 
 func main() {
 	flag.Parse()
 
-	rootDir := "/"
+	rootDir := *rootFlag
 	roots, err := ioutil.ReadDir(rootDir)
 	if err != nil {
 		log.Fatal(err)

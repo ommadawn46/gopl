@@ -1,0 +1,55 @@
+❯ bash run.bash
+Creating goroutines start
+Created 8192 Goroutine, elapsed 0.02s.
+Passing pipeline start
+Passed through 8192 pipes, elapsed 0.00s.
+
+Creating goroutines start
+Created 16384 Goroutine, elapsed 0.05s.
+Passing pipeline start
+Passed through 16384 pipes, elapsed 0.01s.
+
+Creating goroutines start
+Created 32768 Goroutine, elapsed 0.09s.
+Passing pipeline start
+Passed through 32768 pipes, elapsed 0.02s.
+
+Creating goroutines start
+Created 65536 Goroutine, elapsed 0.18s.
+Passing pipeline start
+Passed through 65536 pipes, elapsed 0.06s.
+
+Creating goroutines start
+Created 131072 Goroutine, elapsed 0.34s.
+Passing pipeline start
+Passed through 131072 pipes, elapsed 0.06s.
+
+Creating goroutines start
+Created 262144 Goroutine, elapsed 0.66s.
+Passing pipeline start
+Passed through 262144 pipes, elapsed 0.12s.
+
+Creating goroutines start
+Created 524288 Goroutine, elapsed 1.28s.
+Passing pipeline start
+Passed through 524288 pipes, elapsed 0.26s.
+
+Creating goroutines start
+Created 1048576 Goroutine, elapsed 2.66s.
+Passing pipeline start
+Passed through 1048576 pipes, elapsed 0.53s.
+
+Creating goroutines start
+Created 2097152 Goroutine, elapsed 5.11s.
+Passing pipeline start
+Passed through 2097152 pipes, elapsed 0.97s.
+
+Creating goroutines start
+Created 4194304 Goroutine, elapsed 12.94s.
+Passing pipeline start
+Passed through 4194304 pipes, elapsed 17.27s.
+
+Creating goroutines start
+Created 8388608 Goroutine, elapsed 30.72s.
+Passing pipeline start
+Passed through 8388608 pipes, elapsed 55.50s.

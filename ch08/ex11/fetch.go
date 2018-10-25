@@ -11,9 +11,13 @@ import (
 
 var cancelCh = make(chan struct{}, 1)
 
+func cancelAll() {
+	close(cancelCh)
+}
+
 func main() {
 	var n sync.WaitGroup
-	responses := make(chan *[]byte, 3)
+	responses := make(chan *[]byte, len(os.Args[1:]))
 
 	for _, url := range os.Args[1:] {
 		n.Add(1)
@@ -25,11 +29,7 @@ func main() {
 				return
 			}
 			responses <- res
-			go func() {
-				for {
-					cancelCh <- struct{}{}
-				}
-			}()
+			cancelAll()
 		}(url)
 	}
 	n.Wait()

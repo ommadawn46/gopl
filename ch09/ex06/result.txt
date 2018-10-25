@@ -1,0 +1,92 @@
+❯ system_profiler SPHardwareDataType
+Hardware:
+
+    Hardware Overview:
+
+      Processor Name: Intel Core i5
+      Processor Speed: 3.1 GHz
+      Number of Processors: 1
+      Total Number of Cores: 2
+      L2 Cache (per Core): 256 KB
+      L3 Cache: 4 MB
+      Memory: 16 GB
+
+
+❯ bash bench.bash
+GOMAXPROCS 1
+goos: darwin
+goarch: amd64
+pkg: github.com/ommadawn46/the_go_programming_language-training/ch09/ex06
+Benchmark1  	       1	1409789713 ns/op	 8422128 B/op	 1048583 allocs/op
+Benchmark2  	       1	1489475842 ns/op	 8422016 B/op	 1048582 allocs/op
+Benchmark4  	       1	1490127889 ns/op	 8422624 B/op	 1048585 allocs/op
+Benchmark8  	       1	1442255514 ns/op	 8423472 B/op	 1048588 allocs/op
+Benchmark16 	       1	1426399084 ns/op	 8425648 B/op	 1048597 allocs/op
+Benchmark32 	       1	1463785717 ns/op	 8429744 B/op	 1048613 allocs/op
+PASS
+ok  	github.com/ommadawn46/the_go_programming_language-training/ch09/ex06	8.731s
+
+GOMAXPROCS 2
+goos: darwin
+goarch: amd64
+pkg: github.com/ommadawn46/the_go_programming_language-training/ch09/ex06
+Benchmark1-2    	       1	1702218640 ns/op	 8422320 B/op	 1048585 allocs/op
+Benchmark2-2    	       2	 622782813 ns/op	 8421840 B/op	 1048581 allocs/op
+Benchmark4-2    	       2	 618913159 ns/op	 8422128 B/op	 1048581 allocs/op
+Benchmark8-2    	       2	 612619426 ns/op	 8421832 B/op	 1048581 allocs/op
+Benchmark16-2   	       2	 604865102 ns/op	 8423136 B/op	 1048587 allocs/op
+Benchmark32-2   	       2	 656053356 ns/op	 8424576 B/op	 1048593 allocs/op
+PASS
+ok  	github.com/ommadawn46/the_go_programming_language-training/ch09/ex06	11.839s
+
+GOMAXPROCS 4
+goos: darwin
+goarch: amd64
+pkg: github.com/ommadawn46/the_go_programming_language-training/ch09/ex06
+Benchmark1-4    	       1	1555745190 ns/op	 8422336 B/op	 1048585 allocs/op
+Benchmark2-4    	       2	 746671574 ns/op	 8422088 B/op	 1048582 allocs/op
+Benchmark4-4    	       2	 552979685 ns/op	 8422512 B/op	 1048583 allocs/op
+Benchmark8-4    	       2	 588214490 ns/op	 8423296 B/op	 1048586 allocs/op
+Benchmark16-4   	       2	 608968621 ns/op	 8424208 B/op	 1048591 allocs/op
+Benchmark32-4   	       2	 578720620 ns/op	 8430208 B/op	 1048611 allocs/op
+PASS
+ok  	github.com/ommadawn46/the_go_programming_language-training/ch09/ex06	11.566s
+
+GOMAXPROCS 8
+goos: darwin
+goarch: amd64
+pkg: github.com/ommadawn46/the_go_programming_language-training/ch09/ex06
+Benchmark1-8    	       1	1523958454 ns/op	 8422256 B/op	 1048584 allocs/op
+Benchmark2-8    	       2	 798553294 ns/op	 8423168 B/op	 1048585 allocs/op
+Benchmark4-8    	       2	 586351768 ns/op	 8422664 B/op	 1048584 allocs/op
+Benchmark8-8    	       2	 564058292 ns/op	 8423784 B/op	 1048589 allocs/op
+Benchmark16-8   	       2	 553085075 ns/op	 8427096 B/op	 1048596 allocs/op
+Benchmark32-8   	       2	 572301386 ns/op	 8429784 B/op	 1048610 allocs/op
+PASS
+ok  	github.com/ommadawn46/the_go_programming_language-training/ch09/ex06	11.363s
+
+GOMAXPROCS 16
+goos: darwin
+goarch: amd64
+pkg: github.com/ommadawn46/the_go_programming_language-training/ch09/ex06
+Benchmark1-16     	       1	1474841822 ns/op	 8423936 B/op	 1048586 allocs/op
+Benchmark2-16     	       2	 737866228 ns/op	 8421856 B/op	 1048581 allocs/op
+Benchmark4-16     	       2	 619965923 ns/op	 8422576 B/op	 1048584 allocs/op
+Benchmark8-16     	       2	 597266122 ns/op	 8424040 B/op	 1048588 allocs/op
+Benchmark16-16    	       2	 584968538 ns/op	 8429744 B/op	 1048606 allocs/op
+Benchmark32-16    	       2	 725901358 ns/op	 8434160 B/op	 1048635 allocs/op
+PASS
+ok  	github.com/ommadawn46/the_go_programming_language-training/ch09/ex06	11.771s
+
+GOMAXPROCS 32
+goos: darwin
+goarch: amd64
+pkg: github.com/ommadawn46/the_go_programming_language-training/ch09/ex06
+Benchmark1-32     	       1	1530762140 ns/op	 8422064 B/op	 1048582 allocs/op
+Benchmark2-32     	       2	 733569373 ns/op	 8423288 B/op	 1048585 allocs/op
+Benchmark4-32     	       2	 563943544 ns/op	 8422920 B/op	 1048584 allocs/op
+Benchmark8-32     	       2	 552757201 ns/op	 8424400 B/op	 1048592 allocs/op
+Benchmark16-32    	       2	 601305893 ns/op	 8431872 B/op	 1048626 allocs/op
+Benchmark32-32    	       2	 575304038 ns/op	 8435152 B/op	 1048633 allocs/op
+PASS
+ok  	github.com/ommadawn46/the_go_programming_language-training/ch09/ex06	11.386s

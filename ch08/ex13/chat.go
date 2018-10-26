@@ -66,21 +66,23 @@ func handleConn(conn net.Conn) {
 	}()
 
 	finish := false
-	ticker := time.NewTicker(5 * time.Minute)
+
+	fiveMinutes := 5 * time.Minute
+	timer := time.NewTimer(fiveMinutes)
 	for !finish {
 		select {
 		case text, ok := <-inputs:
 			if ok {
 				messages <- who + ": " + text
+				timer.Reset(fiveMinutes)
 			} else {
 				finish = true
 			}
 
-		case <-ticker.C:
+		case <-timer.C:
 			finish = true
 		}
 	}
-	ticker.Stop()
 
 	leaving <- cli
 	messages <- who + " has left"

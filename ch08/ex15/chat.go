@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const TimeoutDuration = 5 * time.Minute
+
 type client struct {
 	ch   chan<- string
 	name string
@@ -50,6 +52,8 @@ func broadcaster() {
 }
 
 func handleConn(conn net.Conn) {
+	defer conn.Close()
+
 	ch := make(chan string)
 	go clientWriter(conn, ch)
 
@@ -62,8 +66,15 @@ func handleConn(conn net.Conn) {
 		close(inputs)
 	}()
 
+	timer := time.NewTimer(TimeoutDuration)
+	var who string
 	ch <- "What is your name?: "
-	who := <-inputs
+	select {
+	case who = <-inputs:
+		timer.Reset(TimeoutDuration)
+	case <-timer.C:
+		return
+	}
 	cli := client{ch, who}
 	ch <- "Welcome, " + who
 
@@ -71,14 +82,12 @@ func handleConn(conn net.Conn) {
 	entering <- cli
 
 	finish := false
-	fiveMinutes := 5 * time.Minute
-	timer := time.NewTimer(fiveMinutes)
 	for !finish {
 		select {
 		case text, ok := <-inputs:
 			if ok {
 				messages <- who + ": " + text
-				timer.Reset(fiveMinutes)
+				timer.Reset(TimeoutDuration)
 			} else {
 				finish = true
 			}
@@ -90,7 +99,6 @@ func handleConn(conn net.Conn) {
 
 	leaving <- cli
 	messages <- who + " has left"
-	conn.Close()
 }
 
 func clientWriter(conn net.Conn, ch <-chan string) {

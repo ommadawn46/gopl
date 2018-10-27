@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/ommadawn46/the_go_programming_language-training/ch08/ex02/ftp/usermanager"
 )
@@ -34,6 +35,7 @@ type Worker struct {
 	DataListener *net.TCPListener
 	DataAddr     string
 	LoggedIn     bool
+	cmdMutex     sync.Mutex
 
 	rootDirPtr *string
 	workDir    string
@@ -44,7 +46,10 @@ type Worker struct {
 }
 
 func (w *Worker) Call(cmd Command, arg string, data []byte) (int, string, []byte) {
-	return cmd.exec(w, arg, data)
+	w.cmdMutex.Lock()
+	code, message, data := cmd.exec(w, arg, data)
+	w.cmdMutex.Unlock()
+	return code, message, data
 }
 
 func (w *Worker) CheckReadyForTransfer() error {

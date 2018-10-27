@@ -16,12 +16,12 @@ import (
 type Attribute int
 
 const (
-	NeedsArg       Attribute = iota // 要引数
-	NeedsLogin                      // 要ログイン
-	MustNotLogin                    // ログイン前のみ実行可能
-	RecvDataBefore                  // コマンド実行前にデータを受け取る
-	SendDataAfter                   // コマンド実行後にデータを転送する
-	CloseDataConn                   // データ転送を中断する
+	NeedsArg          Attribute = iota // 要引数
+	NeedsLogin                         // 要ログイン
+	MustNotLogin                       // ログイン前のみ実行可能
+	RecvDataBefore                     // コマンド実行前にデータを受け取る
+	SendDataAfter                      // コマンド実行後にデータを転送する
+	CloseAllDataConns                  // データ転送を中断する
 )
 
 type Command struct {
@@ -49,7 +49,7 @@ func init() {
 			},
 			attrs: []Attribute{
 				NeedsLogin,
-				CloseDataConn,
+				CloseAllDataConns,
 			},
 			syntax: "ABOR",
 		},

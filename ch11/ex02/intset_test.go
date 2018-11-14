@@ -90,8 +90,8 @@ func TestIntSetHas(t *testing.T) {
 		t.Errorf("actual %v want %v", actual, expected)
 	}
 
-	actual = s.Has(1 << 13)
-	_, expected = m[1<<13]
+	actual = s.Has(8192)
+	_, expected = m[8192]
 	if actual != expected {
 		t.Errorf("actual %v want %v", actual, expected)
 	}

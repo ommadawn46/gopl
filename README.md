@@ -1,1 +1,3 @@
-# the_go_programming_language-training
+# gopl
+
+Solutions to the exercises of `The Go Programming Language`.

@@ -45,7 +45,7 @@ func randomNonPalindrome(rng *rand.Rand) string {
 	} else {
 		// 非文字をランダムに追加
 		n = rng.Intn(25)
-		for i := 0; i < n2; i++ {
+		for i := 0; i < n; i++ {
 			idx := rng.Intn(len(runes) + 1)
 			r := rune(rng.Intn(0x1000))
 			for unicode.IsLetter(r) {

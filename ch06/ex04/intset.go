@@ -43,7 +43,7 @@ func (s *IntSet) IntersectWith(t *IntSet) {
 		if i < len(s.words) {
 			s.words[i] &= tword
 		} else {
-			s.words = append(s.words, tword)
+			break
 		}
 	}
 }
@@ -88,8 +88,10 @@ func (s *IntSet) Len() int {
 
 func (s *IntSet) Remove(x int) {
 	word, bit := x/64, uint(x%64)
-	s.words[word] |= 1 << bit
-	s.words[word] ^= 1 << bit
+	if word < len(s.words) {
+		s.words[word] |= 1 << bit
+		s.words[word] ^= 1 << bit
+	}
 }
 
 func (s *IntSet) Clear() {

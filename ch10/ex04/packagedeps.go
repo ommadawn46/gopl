@@ -76,20 +76,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	var pkgNames []string
-	for _, pkg := range machedPkgs {
-		pkgNames = append(pkgNames, pkg.ImportPath)
-	}
-
-	targetPkgs, err := execGoList(pkgNames)
+	allPkgs, err := execGoList([]string{"..."})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	for _, pkg := range targetPkgs {
-		for _, pkgName := range pkg.Deps {
-			fmt.Printf("%s -> %s\n", pkg.ImportPath, pkgName)
+	for _, machedPkg := range machedPkgs {
+		for _, pkg := range allPkgs {
+			for _, dep := range pkg.Deps {
+				if dep == machedPkg.ImportPath {
+					fmt.Printf("%s <- %s\n", machedPkg.ImportPath, pkg.ImportPath)
+				}
+			}
 		}
 	}
 }

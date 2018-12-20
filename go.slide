@@ -1,0 +1,129 @@
+Go言語研修 振り返り
+21 December 2018
+
+平松 耕輔
+サイバーセキュリティ部
+セキュリティエンジニアリングG
+
+
+* 自己紹介
+
+平松 耕輔
+
+- セキュリティエンジニアリングG
+- 新卒1年目
+
+Webセキュリティが専門。
+趣味で暗号とかバイナリ解析をやったりしています。
+
+業務は脆弱性検査（ソースコード検査、ブラックボックス検査）が中心。
+自分でコードを書くことはあまり多くないです。
+
+コードを書くきっかけが欲しかったので
+この講義を受講することにしました。
+
+* はじめに
+
+柴田さん、一緒に受講してくれた皆さん
+ありがとうございました。
+
+もし、一人でこの本に取り組んでいたら
+最後まで練習問題を解ききるのは無理だったと思います。
+
+練習問題は量が多く、研修前に徹夜で取り組むようなこともありましたが
+最後まで心折れずにやりきることが出来ました。
+
+それから、Go言語はgoroutineが軽量でビルドも速く、
+強い性的型付けによる安心感もあり、
+何よりセキュリティ的に強固で良い言語だと思いました。
+
+
+* 頑張った問題 8.2
+練習問題 8.2
+  並列に動作するFTP(File Transfer Protocol)サーバを実装しなさい。
+
+- 26個のコマンドを実装
+  ABOR, CWD, DELE, EPRT, EPSV, HELP, LIST, MDTM, MKD, MODE, NLST, NOOP, PASS,
+  PASV, PORT, PWD, QUIT, RETR, RMD, RNFR, RNTO, SIZE, STOR, STRU, TYPE, USER
+
+- HELPコマンドの実装が一番大変だった（大幅に作り変える必要があったため）
+  ❯ nc localhost 22
+  220 Ready
+  HELP
+  214-The following commands are recognized:
+  ABOR	CWD	DELE	EPRT	EPSV	HELP	LIST	MDTM
+  MKD	MODE	NLST	NOOP	PASS	PASV	PORT	PWD
+  QUIT	RETR	RMD	RNFR	RNTO	SIZE	STOR	STRU
+  TYPE	USER
+  214 HELP command successful
+  HELP EPRT
+  214 Syntax: EPRT <SP> <d> <net-prt> <d> <net-addr> <d> <tcp-port> <d>
+
+
+* 頑張った問題 8.2
+- 簡易的なユーザ管理機能
+  ❯ ./goftp -adduser -user hoge -pass fuga
+  Successfully added user: hoge
+
+- ソルト付きハッシュでpasswdファイルを作成
+  ❯ cat ./passwd
+  hoge:df944d7bc46ea6f7cbe32ca2b2680c44:3af5d4892333e863fe9156589cc454a841be4165914c478d40f1d82dbfced4eb8cdff2e2e9180b4e75283aa6554c58ce9a4bb2fa346af1b587e64086cf5049cb
+  foo:614fd37ebb6c3da7d89dab8df9c63382:96b741d17eff5ed02b4f60797260a1e3c8a508eb4fa3c295c103209dc6c4cb19ab500ab1c535dc2b07a47fd38c158c314efc6501e960d32083f4cddb0fd35484
+
+- ちゃんとFTPユーザとしてログインできる
+  ❯ nc localhost 22
+  220 Ready
+  USER hoge
+  331 Password required for hoge
+  PASS fuga
+  230 User hoge logged in
+
+
+* 頑張った問題 3.7
+練習問題 3.7
+別の単純なフラクタルはz^4-1=0などの方程式に対する複素素数解を求めるためにニュートン法を使用します。四つの根の1つの根に近づくのに必要な繰り返し回数で書く開始点にグラデーションをつけなさい。それが近づいている根ごとに各点に色付けしなさい。
+.image ./ch03/ex07/img/newton04d.png _ 300
+
+* 頑張った問題 3.7
+z^2-1=0
+.image ./ch03/ex07/img/newton02d.png _ 500
+
+* 頑張った問題 3.7
+z^3-1=0
+.image ./ch03/ex07/img/newton03d.png _ 500
+
+* 頑張った問題 3.7
+z^4-1=0
+.image ./ch03/ex07/img/newton04d.png _ 500
+
+* 頑張った問題 3.7
+z^6-1=0
+.image ./ch03/ex07/img/newton06d.png _ 500
+
+* 頑張った問題 3.7
+z^12-1=0
+.image ./ch03/ex07/img/newton12d.png _ 500
+
+* 頑張った問題 3.7
+z^24-1=0
+.image ./ch03/ex07/img/newton24d.png _ 500
+
+* 頑張った問題 3.7
+z^36-1=0
+.image ./ch03/ex07/img/newton36d.png _ 500
+
+* 頑張った問題 3.7
+任意の方程式でニュートン法でフラクタルを作れるように拡張！
+.image ./ch03/ex07/img/anim.gif _ 500
+
+* おわりに
+
+他にもevalの問題で高階関数を使えるようにしたりなど…
+いろいろ遊びました。
+
+ちょうど業務でGoに触りそうな機運があり
+早く業務で使ってみたい気持ちです。
+
+繰り返しになりますが
+柴田さん、一緒に受講してくれた皆さん
+ありがとうございました。

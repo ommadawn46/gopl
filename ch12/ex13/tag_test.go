@@ -10,7 +10,7 @@ type TaggedStruct struct {
 	IntField    int
 }
 
-func TestMarhalWithTag(t *testing.T) {
+func TestMarshalWithTag(t *testing.T) {
 	for _, test := range []struct {
 		input TaggedStruct
 		want  string
@@ -39,7 +39,7 @@ func TestMarhalWithTag(t *testing.T) {
 	}
 }
 
-func TestUnmarhalWithTag(t *testing.T) {
+func TestUnmarshalWithTag(t *testing.T) {
 	for _, test := range []struct {
 		input string
 		want  TaggedStruct

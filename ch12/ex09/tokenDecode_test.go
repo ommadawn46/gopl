@@ -12,10 +12,22 @@ func TestTokenDecode(t *testing.T) {
 		input string
 		want  []Token
 	}{
-		{"", []Token{}},
-		{`("A" "B" "C")`, []Token{StartList{}, String("A"), String("B"), String("C"), EndList{}}},
-		{`("A" "B" "C" (1 2 3))`, []Token{StartList{}, String("A"), String("B"), String("C"), StartList{}, Int(1), Int(2), Int(3), EndList{}, EndList{}}},
-		{`  ( "A"   "B"  "C" (  1  2   3  )   ) `, []Token{StartList{}, String("A"), String("B"), String("C"), StartList{}, Int(1), Int(2), Int(3), EndList{}, EndList{}}},
+		{
+			"",
+			[]Token{},
+		},
+		{
+			`("A" "B" "C")`,
+			[]Token{StartList{}, String("A"), String("B"), String("C"), EndList{}},
+		},
+		{
+			`("A" "B" "C" (1 2 3))`,
+			[]Token{StartList{}, String("A"), String("B"), String("C"), StartList{}, Int(1), Int(2), Int(3), EndList{}, EndList{}},
+		},
+		{
+			`  ( "A"   "B"  "C" (  1  2   3  )   ) `,
+			[]Token{StartList{}, String("A"), String("B"), String("C"), StartList{}, Int(1), Int(2), Int(3), EndList{}, EndList{}},
+		},
 	} {
 		r := bytes.NewBuffer([]byte(test.input))
 		decoder := NewDecoder(r)

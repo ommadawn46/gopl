@@ -17,6 +17,10 @@ type Int int
 
 type Nil struct{}
 
+func (_ Nil) String() string {
+	return "nil"
+}
+
 type StartList struct{}
 
 func (_ StartList) String() string {

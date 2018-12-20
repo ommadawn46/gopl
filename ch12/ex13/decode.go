@@ -25,9 +25,9 @@ func (d *Decoder) Decode(v interface{}) (err error) {
 	lex.next() // get the first token
 	defer func() {
 		// NOTE: this is not an example of ideal error handling.
-		//if x := recover(); x != nil {
-		//	err = fmt.Errorf("error at %s: %v", lex.scan.Position, x)
-		//}
+		if x := recover(); x != nil {
+			err = fmt.Errorf("error at %s: %v", lex.scan.Position, x)
+		}
 	}()
 	read(lex, reflect.ValueOf(v).Elem())
 	return nil

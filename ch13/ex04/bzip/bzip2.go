@@ -35,8 +35,5 @@ func (w *writer) Close() error {
 	if closeErr != nil {
 		return closeErr
 	}
-	if waitErr != nil {
-		return waitErr
-	}
-	return nil
+	return waitErr
 }

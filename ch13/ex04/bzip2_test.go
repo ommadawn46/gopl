@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ommadawn46/the_go_programming_language-training/ch13/ex04/bzip"
+	"github.com/ommadawn46/gopl/ch13/ex04/bzip"
 )
 
 func TestBzip2(t *testing.T) {

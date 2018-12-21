@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ommadawn46/the_go_programming_language-training/ch10/ex02/unarchive"
-	_ "github.com/ommadawn46/the_go_programming_language-training/ch10/ex02/unarchive/tar"
-	_ "github.com/ommadawn46/the_go_programming_language-training/ch10/ex02/unarchive/zip"
+	"github.com/ommadawn46/gopl/ch10/ex02/unarchive"
+	_ "github.com/ommadawn46/gopl/ch10/ex02/unarchive/tar"
+	_ "github.com/ommadawn46/gopl/ch10/ex02/unarchive/zip"
 )
 
 func extract(src, dest string) error {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/ommadawn46/the_go_programming_language-training/ch05/ex13/links"
+	"github.com/ommadawn46/gopl/ch05/ex13/links"
 )
 
 var depthOpt = flag.Int("depth", 3, "crawl depth")

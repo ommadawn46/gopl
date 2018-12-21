@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/ommadawn46/the_go_programming_language-training/ch08/ex10/links"
+	"github.com/ommadawn46/gopl/ch08/ex10/links"
 )
 
 var cancelCh = make(chan struct{}, 1)

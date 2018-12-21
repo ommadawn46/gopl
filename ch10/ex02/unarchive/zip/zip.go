@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/ommadawn46/the_go_programming_language-training/ch10/ex02/unarchive"
+	"github.com/ommadawn46/gopl/ch10/ex02/unarchive"
 )
 
 type zipFile struct {

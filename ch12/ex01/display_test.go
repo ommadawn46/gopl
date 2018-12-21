@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ommadawn46/the_go_programming_language-training/ch07/ex14"
+	"github.com/ommadawn46/gopl/ch07/ex14"
 )
 
 func Example_arrayMap() {

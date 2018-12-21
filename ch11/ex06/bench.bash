@@ -9,7 +9,7 @@ go test -bench .
 # ❯ bash bench.bash
 # goos: darwin
 # goarch: amd64
-# pkg: github.com/ommadawn46/the_go_programming_language-training/ch11/ex06
+# pkg: github.com/ommadawn46/gopl/ch11/ex06
 # BenchmarkPopCountTable1-4               	 5000000	       304 ns/op
 # BenchmarkPopCountTable10-4              	 5000000	       319 ns/op
 # BenchmarkPopCountTable100-4             	 2000000	       642 ns/op
@@ -26,4 +26,4 @@ go test -bench .
 # BenchmarkPopCountLowerBitClear1000-4    	  300000	      6042 ns/op
 # BenchmarkPopCountLowerBitClear10000-4   	   30000	     55208 ns/op
 # PASS
-# ok  	github.com/ommadawn46/the_go_programming_language-training/ch11/ex06	25.874s
+# ok  	github.com/ommadawn46/gopl/ch11/ex06	25.874s
